@@ -54,7 +54,6 @@ void franka_bridge::callback_curr_pose(const franka_msgs::FrankaState::ConstPtr&
 		quat_base2EE_.w() = quat_base2EE_.w() * (-1); 
 		quat_base2EE_.vec() = quat_base2EE_.vec() * (-1); 
 	}
-
 	quat_base2EE_old_ = quat_base2EE_;
 }
 
