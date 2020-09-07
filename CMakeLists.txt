@@ -216,3 +216,7 @@ target_link_libraries(franka_bridge_node ${catkin_LIBRARIES})
 add_executable(franka_gripper_bridge_node src/main_franka_gripper_bridge.cpp)
 add_dependencies(franka_gripper_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(franka_gripper_bridge_node ${catkin_LIBRARIES})
+
+add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
+add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})

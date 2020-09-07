@@ -1,0 +1,6 @@
+#robot
+topic_pose_des: "/Franka_RIGHT/equilibrium_pose"
+topic_franka_states: "/Franka_RIGHT/franka_state_controller/franka_states"
+#EE
+topic_qbhand_command: "/qbhand_right/control/qbhand_right_synergy_trajectory_controller/command"
+qbhand_name_joint: "qbhand_right_synergy_joint"
