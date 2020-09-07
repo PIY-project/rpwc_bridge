@@ -11,8 +11,12 @@ ros::Publisher pub_hand_des_;
 
 bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpwc::rpwc_gripper_cmd::Response &res)
 {
-	// gripper_cmd_ = req.EE_cmd_.data;
-	// new_gripper_cmd_ = true;
+	send_hand_.points.clear();
+  	send_hand_.points.resize(1);
+  	send_hand_.points[0].positions.push_back(req.EE_cmd_.data);
+  	send_hand_.points[0].time_from_start = ros::Duration(0.3);
+  	pub_hand_des_.publish(send_hand_);
+
 	return true;
 }
 
