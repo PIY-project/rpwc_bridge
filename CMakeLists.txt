@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rpwc
   std_msgs
   franka_gripper
-
+  apriltag_ros
 )
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
@@ -231,3 +231,8 @@ target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 add_executable(launch_from_web_node src/main_launch_from_web.cpp)
 add_dependencies(launch_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(launch_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES})
+
+
+add_executable(cam_from_web_node src/main_cam_from_web.cpp)
+add_dependencies(cam_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(cam_from_web_node ${catkin_LIBRARIES})
