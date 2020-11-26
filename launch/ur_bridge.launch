@@ -1,0 +1,11 @@
+ 
+<launch>
+  	<arg name="yamlFile" default="$(find rpwc_bridge)/config/bridge_config.yaml"/>
+  	<rosparam command="load" file="$(arg yamlFile)"/>
+  	
+    <node pkg="rpwc_bridge" name="ur_bridge" type="ur_bridge_node" output="screen"/>
+
+    <!-- <node pkg="rpwc_bridge" name="franka_gripper_bridge" type="franka_gripper_bridge_node" output="screen"/> -->
+    <node pkg="rpwc_bridge" name="softhand_bridge" type="softhand_bridge_node" output="screen"/>
+
+</launch>

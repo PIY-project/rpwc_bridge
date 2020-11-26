@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(rpwc_bridge)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -236,3 +236,8 @@ target_link_libraries(launch_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES}
 add_executable(cam_from_web_node src/main_cam_from_web.cpp)
 add_dependencies(cam_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cam_from_web_node ${catkin_LIBRARIES})
+
+
+add_executable(ur_bridge_node src/main_ur_bridge.cpp src/ur_bridge.cpp )
+add_dependencies(ur_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(ur_bridge_node ${catkin_LIBRARIES})
