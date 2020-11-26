@@ -7,7 +7,7 @@
 
 
 trajectory_msgs::JointTrajectory send_hand_;
-ros::Publisher pub_hand_des_;
+ros::Publisher pub_hand_des_, pub_CommandHand_test_;
 
 bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpwc::rpwc_gripper_cmd::Response &res)
 {
@@ -28,6 +28,10 @@ void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
   	send_hand_.points[0].positions.push_back(msg->data);
   	send_hand_.points[0].time_from_start = ros::Duration(0.3);
   	pub_hand_des_.publish(send_hand_);
+
+  	std_msgs::Float64 hand_test;
+  	hand_test.data = msg->data;
+  	pub_CommandHand_test_.publish(hand_test);
 }
 
 
@@ -56,6 +60,8 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("/rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
   	//Publisher
     pub_hand_des_ = nh.advertise<trajectory_msgs::JointTrajectory>(topic_qbhand_command, 1);
+    pub_CommandHand_test_ = nh.advertise<std_msgs::Float64>("/hand_cmd", 1);
+
 	//Service Server
   	ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("/rpwc_EE_single_cmd", &callback_rpwc_gripper_single_cmd);
 

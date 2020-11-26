@@ -12,6 +12,7 @@ franka_bridge::franka_bridge()
     pub_pos_des_ = n_.advertise<geometry_msgs::PoseStamped>(topic_pose_des, 1);
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("/rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
+	T_base_2_EE_ = Eigen::Matrix4d::Identity();
 
 	first_quat_base_EE_ = true;
 }
