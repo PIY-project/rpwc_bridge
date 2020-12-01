@@ -25,7 +25,7 @@ private:
 	bool callback_robot_curr_pose(rpwc::robot_curr_pose::Request  &req, rpwc::robot_curr_pose::Response &res);
 
 	ros::Subscriber sub_curr_pos_, sub_rpwc_pose_des_;
-	ros::Publisher pub_pos_des_;
+	ros::Publisher pub_pos_des_, pub_curr_pos_;
 	ros::ServiceServer server_robot_curr_pose_;
 
 	Eigen::Quaterniond quat_base2EE_, quat_base2EE_old_;

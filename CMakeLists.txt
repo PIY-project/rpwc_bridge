@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   franka_gripper
   apriltag_ros
+  message_generation
 )
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
@@ -58,12 +59,11 @@ find_package(Poco REQUIRED COMPONENTS Foundation)
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  setup_hardware.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -72,11 +72,11 @@ find_package(Poco REQUIRED COMPONENTS Foundation)
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+# Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

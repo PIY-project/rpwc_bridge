@@ -10,6 +10,7 @@ ur_bridge::ur_bridge()
 	sub_rpwc_pose_des_ = n_.subscribe("/rpwc_pose_des", 1, &ur_bridge::callback_rpwc_pose_des, this);
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::Pose>(topic_pose_des, 1);
+    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("/rpwc_robot_curr_pose", 1);
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("/rpwc_robot_curr_pose", &ur_bridge::callback_robot_curr_pose, this);
 
@@ -48,6 +49,16 @@ void ur_bridge::callback_curr_pose(const geometry_msgs::Pose::ConstPtr& msg)
 	T_base_2_EE_(2,3) = msg->position.z;
 	Eigen::Matrix3d R_tmp(quat_base2EE_);
 	T_base_2_EE_.block<3,3>(0,0) = R_tmp;
+
+	geometry_msgs::Pose msg_pose;
+	msg_pose.orientation.w = quat_base2EE_.w();
+	msg_pose.orientation.x = quat_base2EE_.x();
+	msg_pose.orientation.y = quat_base2EE_.y();
+	msg_pose.orientation.z = quat_base2EE_.z();
+	msg_pose.position.x = T_base_2_EE_(0,3);
+	msg_pose.position.y = T_base_2_EE_(1,3);
+	msg_pose.position.z = T_base_2_EE_(2,3);
+	pub_curr_pos_.publish(msg_pose);
 
 }
 
