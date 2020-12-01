@@ -1,0 +1,7 @@
+std_msgs/Bool active
+std_msgs/String ns
+std_msgs/String brand
+std_msgs/String model
+std_msgs/String ip
+---
+std_msgs/Bool answer
