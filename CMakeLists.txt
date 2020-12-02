@@ -13,12 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   rpwc
   std_msgs
   franka_gripper
-  apriltag_ros
+  cv_bridge
+#   apriltag_ros
   message_generation
 )
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
-
+find_package(OpenCV)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -235,7 +236,7 @@ target_link_libraries(launch_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES}
 
 add_executable(cam_from_web_node src/main_cam_from_web.cpp)
 add_dependencies(cam_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(cam_from_web_node ${catkin_LIBRARIES})
+target_link_libraries(cam_from_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 
 add_executable(ur_bridge_node src/main_ur_bridge.cpp src/ur_bridge.cpp )

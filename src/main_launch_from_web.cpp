@@ -11,6 +11,7 @@ Poco::ProcessHandle* ph;
 Poco::ProcessHandle* ph_arm_;
 Poco::ProcessHandle* ph_ee_;
 Poco::ProcessHandle* ph_cam_;
+
 bool running = false;
 bool running_arm_ = false;
 bool running_ee_ = false;
