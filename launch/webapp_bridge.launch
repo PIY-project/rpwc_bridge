@@ -1,0 +1,13 @@
+ 
+<launch>
+
+	<!-- launch HW -->
+    <node pkg="rpwc_bridge" name="launch_from_web" type="launch_from_web_node" output="screen"/>
+
+    <!-- controller switcher -->
+    <node pkg="rpwc_bridge" name="switch_ctr_from_web" type="switch_ctr_from_web_node" output="screen"/>
+
+	<!-- camera bridge -->
+    <node pkg="rpwc_bridge" name="cam_from_web" type="cam_from_web_node" output="screen"/>
+
+</launch>

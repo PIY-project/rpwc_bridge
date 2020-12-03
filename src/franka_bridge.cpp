@@ -7,13 +7,18 @@ franka_bridge::franka_bridge()
 	n_.getParam("topic_pose_des", topic_pose_des);
 	//Subscriber
 	sub_curr_pos_ = n_.subscribe(topic_franka_states, 1, &franka_bridge::callback_curr_pose, this);
-	sub_rpwc_pose_des_ = n_.subscribe("/rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
+	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::PoseStamped>(topic_pose_des, 1);
-    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("/rpwc_robot_curr_pose", 1);
+    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("rpwc_robot_curr_pose", 1);
 	//Service Server
-  	server_robot_curr_pose_ = n_.advertiseService("/rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
+  	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
+  	
+  	server_switch_controller_ = n_.advertiseService("rpwc_switch_arm_controller", &franka_bridge::callback_switch_controller, this);
+  	client_switch_controller_ = n_.serviceClient<controller_manager_msgs::SwitchController>("controller_manager/switch_controller");
+
 	T_base_2_EE_ = Eigen::Matrix4d::Identity();
+	old_controller_name_ = "joint_position_one_task_inv_kin";
 
 	first_quat_base_EE_ = true;
 }
@@ -96,3 +101,35 @@ bool franka_bridge::callback_robot_curr_pose(rpwc::robot_curr_pose::Request  &re
 	res.robot_curr_pose = robot_curr_pose;
 	return true;
 }
+
+bool franka_bridge::callback_switch_controller(rpwc_bridge::set_controller::Request  &req, rpwc_bridge::set_controller::Response &res)
+{
+	std::string tmp_name = req.controller_name.data;
+	if(tmp_name.compare("pos_ctr") == 0) controller_name_ = "joint_position_one_task_inv_kin";
+	else if(tmp_name.compare("imp_ctr") == 0) controller_name_ = "cartesian_impedance_controller_softbots_stiff_matrix";
+	else if(tmp_name.compare("grav_ctr") == 0) controller_name_ = "gravity_comp";
+	// controller_name_ = req.controller_name.data;
+
+
+
+
+
+	controller_manager_msgs::SwitchController switch_controller;
+    switch_controller.request.start_controllers.clear();
+    switch_controller.request.stop_controllers.clear();
+
+    switch_controller.request.strictness = controller_manager_msgs::SwitchController::Request::BEST_EFFORT;
+
+    switch_controller.request.start_controllers.push_back("");
+    switch_controller.request.stop_controllers.push_back(old_controller_name_);
+    if (!client_switch_controller_.call(switch_controller)) ROS_ERROR("Failed to call service client_switch_controller_ ");
+    switch_controller.request.start_controllers.push_back(controller_name_);
+    switch_controller.request.stop_controllers.push_back("");
+    if (!client_switch_controller_.call(switch_controller)) ROS_ERROR("Failed to call service client_switch_controller_ ");
+
+    old_controller_name_ = controller_name_;
+
+	res.answer.data = true;
+	return true;
+}
+

@@ -82,13 +82,14 @@ bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge:
         {
             names_vec_.push_back(name);
             std::string cmd_line;
-            cmd_line = req.brand.data + "_launch" + " " + req.model.data + ".launch" + " " + "ns_setup:=" + "'" + req.ns.data + "'" + " " + "ip:=" + "'" + req.ip.data + "'";
+            // cmd_line = "rpwc_" + req.brand.data + "_launch" + " " + req.model.data + ".launch" + " " + "ns_setup:=" + "\"" + req.ns.data + "\"" + " " + "ip:=" + "\"" + req.ip.data + "\"";
+            cmd_line = "rpwc_" + req.brand.data + "_launch" + " " + req.model.data + ".launch" + " " + "ns_setup:="  + req.ns.data  + " " + "ip:="  + req.ip.data ;
             std::vector<std::string> args;
             boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
             Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
 
             ph_vec_.push_back(new Poco::ProcessHandle(ph_running)); // Copy the processhandler to our global variable
-            ROS_INFO_STREAM("launched : roslaunch" << cmd_line);
+            ROS_INFO_STREAM("launched : roslaunch " << cmd_line);
         }
         else ROS_INFO_STREAM("the process is already running");
 
@@ -116,11 +117,20 @@ bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge:
 int main(int argc, char** argv){
     ros::init(argc, argv, "node_runner");
     ros::NodeHandle n;
+    ros::Rate r(30.0);
     ros::Subscriber sub_run = n.subscribe("/run",100,callback_run);
     ros::Subscriber sub_kill = n.subscribe("/kill",100,callback_kill);
 
     ros::ServiceServer service_hw = n.advertiseService("/hw_launch", callback_hw_launch);
 
-    ros::spin();
+    // ros::spin();
+    while(ros::ok())
+    {
+
+
+        ros::spinOnce();
+        r.sleep();
+        
+    }// end while()
     return 0;
 }

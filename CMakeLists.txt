@@ -64,6 +64,8 @@ find_package(OpenCV)
 add_service_files(
   FILES
   setup_hardware.srv
+  set_controller.srv
+  set_controller_web.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -233,6 +235,9 @@ add_executable(launch_from_web_node src/main_launch_from_web.cpp)
 add_dependencies(launch_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(launch_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES})
 
+add_executable(switch_ctr_from_web_node src/main_switch_ctr_from_web.cpp src/switch_ctr_from_web.cpp)
+add_dependencies(switch_ctr_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(switch_ctr_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES})
 
 add_executable(cam_from_web_node src/main_cam_from_web.cpp)
 add_dependencies(cam_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
