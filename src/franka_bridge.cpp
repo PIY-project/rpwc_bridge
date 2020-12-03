@@ -2,14 +2,11 @@
 
 franka_bridge::franka_bridge()
 {
-	std::string topic_franka_states, topic_pose_des;
-	n_.getParam("topic_franka_states", topic_franka_states);
-	n_.getParam("topic_pose_des", topic_pose_des);
 	//Subscriber
-	sub_curr_pos_ = n_.subscribe(topic_franka_states, 1, &franka_bridge::callback_curr_pose, this);
+	sub_curr_pos_ = n_.subscribe("franka_state_controller/franka_states", 1, &franka_bridge::callback_curr_pose, this);
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
 	//Publisher
-    pub_pos_des_ = n_.advertise<geometry_msgs::PoseStamped>(topic_pose_des, 1);
+    pub_pos_des_ = n_.advertise<geometry_msgs::PoseStamped>("pose_des", 1);
     pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("rpwc_robot_curr_pose", 1);
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
