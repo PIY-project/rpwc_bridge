@@ -103,7 +103,7 @@ bool franka_bridge::callback_switch_controller(rpwc_bridge::set_controller::Requ
 {
 	std::string tmp_name = req.controller_name.data;
 	if(tmp_name.compare("pos_ctr") == 0) controller_name_ = "joint_position_one_task_inv_kin";
-	else if(tmp_name.compare("imp_ctr") == 0) controller_name_ = "cartesian_impedance_controller_softbots_stiff_matrix";
+	else if(tmp_name.compare("imp_ctr") == 0) controller_name_ = "cartesian_impedance_modified";
 	else if(tmp_name.compare("grav_ctr") == 0) controller_name_ = "gravity_comp";
 	// controller_name_ = req.controller_name.data;
 
