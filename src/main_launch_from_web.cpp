@@ -5,12 +5,13 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <rpwc_bridge/setup_hardware.h>
+#include <rpwc_bridge/set_jog_mode_web.h>
 
 
 Poco::ProcessHandle* ph;
-Poco::ProcessHandle* ph_arm_;
-Poco::ProcessHandle* ph_ee_;
-Poco::ProcessHandle* ph_cam_;
+Poco::ProcessHandle* ph_jog_mode_;
+std::string last_jog_mode = "none";
+
 
 bool running = false;
 bool running_arm_ = false;
@@ -113,6 +114,63 @@ bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge:
     return true;
 }
 
+bool callback_jog_launch(rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_bridge::set_jog_mode_web::Response &res)
+{
+
+    std::string jog_mode = req.jog_mode_name.data;
+
+    if(jog_mode.compare(last_jog_mode) != 0)
+    {
+        std::string cmd_line;
+        if(jog_mode.compare("teleop") == 0)
+        {
+            cmd_line = "oculus_robot_bridge rpwc_oculus_bridge.launch ns_setup:="  + req.ns.data;
+            std::vector<std::string> args;
+            boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
+            Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
+            ph_jog_mode_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
+        }
+        else if(jog_mode.compare("smart") == 0)
+        {
+            // cmd_line = "---------------------------------------.launch ns_setup:="  + req.ns.data;
+            // std::vector<std::string> args;
+            // boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
+            // Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
+            // ph_jog_mode_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
+        }
+        else if(jog_mode.compare("gravity") == 0)
+        {
+            if(last_jog_mode.compare("none") != 0)
+            {
+                // kill process ph_jog_mode_
+                Poco::Process::requestTermination(ph_jog_mode_->id()); //send SIGINT
+                Poco::Process::wait(*ph_jog_mode_); //Wait for roslaunch to kill every node
+                free(ph_jog_mode_); 
+            }
+            // call service to switch_ctr_from_web
+        }
+        else if(jog_mode.compare("none") == 0)
+        {
+            if(last_jog_mode.compare("gravity") != 0)
+            {
+                // kill process ph_jog_mode_
+                Poco::Process::requestTermination(ph_jog_mode_->id()); //send SIGINT
+                Poco::Process::wait(*ph_jog_mode_); //Wait for roslaunch to kill every node
+                free(ph_jog_mode_); 
+            }
+            else
+            {
+                // call service to switch_ctr_from_web in position control
+            }
+            
+        }
+    }
+
+    last_jog_mode = jog_mode;
+    
+    return true;
+}
+
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "node_runner");
@@ -122,15 +180,12 @@ int main(int argc, char** argv){
     ros::Subscriber sub_kill = n.subscribe("/kill",100,callback_kill);
 
     ros::ServiceServer service_hw = n.advertiseService("/hw_launch", callback_hw_launch);
+    ros::ServiceServer service_jog = n.advertiseService("/jog_launch", callback_jog_launch);
 
-    // ros::spin();
     while(ros::ok())
     {
-
-
         ros::spinOnce();
         r.sleep();
-        
     }// end while()
     return 0;
 }

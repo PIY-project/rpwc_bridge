@@ -66,6 +66,7 @@ add_service_files(
   setup_hardware.srv
   set_controller.srv
   set_controller_web.srv
+  set_jog_mode_web.srv
 )
 
 ## Generate actions in the 'action' folder

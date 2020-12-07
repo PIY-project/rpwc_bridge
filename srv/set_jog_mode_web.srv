@@ -1,0 +1,4 @@
+std_msgs/String ns
+std_msgs/String jog_mode_name
+---
+std_msgs/Bool answer
