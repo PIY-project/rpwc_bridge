@@ -248,3 +248,7 @@ target_link_libraries(cam_from_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 add_executable(ur_bridge_node src/main_ur_bridge.cpp src/ur_bridge.cpp )
 add_dependencies(ur_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(ur_bridge_node ${catkin_LIBRARIES})
+
+add_executable(joy_web_node src/main_joy_web.cpp)
+add_dependencies(joy_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(joy_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
