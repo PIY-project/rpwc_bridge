@@ -18,7 +18,7 @@ typedef actionlib::SimpleActionClient<franka_gripper::MoveAction> ClientMove;
 class franka_gripper_bridge
 {
 public:
-	franka_gripper_bridge() : ac_grasp("/Franka_RIGHT/franka_gripper/grasp", true), ac_move("/Franka_RIGHT/franka_gripper/move", true)
+	franka_gripper_bridge() : ac_grasp("franka_gripper/grasp", true), ac_move("franka_gripper/move", true)
 	{
 		grasping_ = false;
 		ac_grasp.waitForServer();
@@ -33,9 +33,9 @@ public:
 		move_goal_.width = 0.09;
 		move_goal_.speed = 0.1;
 		//Subscriber
-		sub_rpwc_gripper_cmd_ = n_.subscribe("/rpwc_EE_cmd", 1, &franka_gripper_bridge::callback_rpwc_gripper_cmd, this);
+		sub_rpwc_gripper_cmd_ = n_.subscribe("rpwc_EE_cmd", 1, &franka_gripper_bridge::callback_rpwc_gripper_cmd, this);
 		//Service Server
-  		server_rpwc_gripper_cmd_ = n_.advertiseService("/rpwc_EE_single_cmd", &franka_gripper_bridge::callback_rpwc_gripper_single_cmd, this);
+  		server_rpwc_gripper_cmd_ = n_.advertiseService("rpwc_EE_single_cmd", &franka_gripper_bridge::callback_rpwc_gripper_single_cmd, this);
 	}
 	~franka_gripper_bridge();
 
