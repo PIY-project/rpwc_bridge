@@ -54,8 +54,11 @@ void callback_kill(std_msgs::Empty msg){
 }
 
 bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge::setup_hardware::Response &res)
-{
+{   
+    std::cout << "sono in callback_hw_launch"<< std::endl;
     bool active = req.active.data;
+    std::cout << "bool active: "<< active <<std::endl;
+
     bool is_running;
     int process_index;
     std::string name;
