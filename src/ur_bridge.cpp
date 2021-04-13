@@ -7,12 +7,12 @@ ur_bridge::ur_bridge()
 	n_.getParam("topic_pose_des", topic_pose_des);
 	//Subscriber
 	sub_curr_pos_ = n_.subscribe(topic_ur_states, 1, &ur_bridge::callback_curr_pose, this);
-	sub_rpwc_pose_des_ = n_.subscribe("/rpwc_pose_des", 1, &ur_bridge::callback_rpwc_pose_des, this);
+	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &ur_bridge::callback_rpwc_pose_des, this);
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::Pose>(topic_pose_des, 1);
-    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("/rpwc_robot_curr_pose", 1);
+    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("rpwc_robot_curr_pose", 1);
 	//Service Server
-  	server_robot_curr_pose_ = n_.advertiseService("/rpwc_robot_curr_pose", &ur_bridge::callback_robot_curr_pose, this);
+  	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &ur_bridge::callback_robot_curr_pose, this);
 
 	first_quat_base_EE_ = true;
 	T_base_2_EE_ = Eigen::Matrix4d::Identity();

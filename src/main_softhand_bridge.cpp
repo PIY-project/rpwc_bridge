@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
   	//Publisher
     pub_hand_des_ = nh.advertise<trajectory_msgs::JointTrajectory>("qbhand/control/qbhand_synergy_trajectory_controller/command", 1);
-    pub_CommandHand_test_ = nh.advertise<std_msgs::Float64>("hand_cmd", 1);
+    pub_CommandHand_test_ = nh.advertise<std_msgs::Float64>("/hand_cmd", 1);
 
 	//Service Server
   	ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("rpwc_EE_single_cmd", &callback_rpwc_gripper_single_cmd);
