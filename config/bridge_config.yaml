@@ -1,9 +1,11 @@
-#robot
-topic_pose_des: "/pose_des"
-topic_ur_states: "/hand_pose"
-# topic_pose_des: "/Franka_RIGHT/equilibrium_pose"
-# topic_pose_des: "/Franka_RIGHT/joint_position_one_task_inv_kin/pose_des"
-# topic_franka_states: "/Franka_RIGHT/franka_state_controller/franka_states"
-#EE
-topic_qbhand_command: "/qbhand_right/control/qbhand_right_synergy_trajectory_controller/command"
-qbhand_name_joint: "qbhand_right_synergy_joint"
+
+setup1:
+  #robot
+  topic_pose_des: "/pose_des"
+  topic_ur_states: "/hand_pose"
+  # topic_pose_des: "/Franka_RIGHT/equilibrium_pose"
+  # topic_pose_des: "/Franka_RIGHT/joint_position_one_task_inv_kin/pose_des"
+  # topic_franka_states: "/Franka_RIGHT/franka_state_controller/franka_states"
+  #EE
+  topic_qbhand_command: "/qbhand_right/control/qbhand_right_synergy_trajectory_controller/command"
+  qbhand_name_joint: "qbhand_right_synergy_joint"
