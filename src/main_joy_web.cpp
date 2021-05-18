@@ -20,8 +20,10 @@ int main(int argc, char** argv){
   ros::Rate r_30HZ(50);
 
   //Subscriber
-  ros::Subscriber sub_cmd_web = node.subscribe("/cmd_vel", 1, &callback_cmd_vel);
-  ros::Publisher cmd_vel_pub = node.advertise<geometry_msgs::Twist>("/iRobot_0/cmd_vel", 1);
+  // ros::Subscriber sub_cmd_web = node.subscribe("/cmd_vel", 1, &callback_cmd_vel);
+  // ros::Publisher cmd_vel_pub = node.advertise<geometry_msgs::Twist>("/iRobot_0/cmd_vel", 1);
+  ros::Subscriber sub_cmd_web = node.subscribe("/web_app/cmd_vel", 1, &callback_cmd_vel);
+  ros::Publisher cmd_vel_pub = node.advertise<geometry_msgs::Twist>("/robot/webapp/cmd_vel", 1);
   
   while(ros::ok())
   {
