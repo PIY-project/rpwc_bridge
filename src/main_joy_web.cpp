@@ -4,6 +4,7 @@
 
 double vel_lin_ = 0.0;
 double vel_ang_ = 0.0;
+bool flag_zeros_vel_ = true;
 void callback_cmd_vel(const geometry_msgs::Twist::ConstPtr& msg)
 {
   vel_lin_ = msg->linear.x;
@@ -30,7 +31,16 @@ int main(int argc, char** argv){
     geometry_msgs::Twist msg_cmd;
     msg_cmd.linear.x = vel_lin_;
     msg_cmd.angular.z = vel_ang_;
-    cmd_vel_pub.publish(msg_cmd);
+    if((vel_lin_ == 0.0) && (vel_ang_ == 0.0))
+    {
+      if(flag_zeros_vel_) cmd_vel_pub.publish(msg_cmd);
+      flag_zeros_vel_ = false;
+    }
+    else 
+    {
+      cmd_vel_pub.publish(msg_cmd);
+      flag_zeros_vel_ = true;
+    }
 
     ros::spinOnce();
     r_30HZ.sleep();
