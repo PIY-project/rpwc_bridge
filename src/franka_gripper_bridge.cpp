@@ -34,3 +34,23 @@ bool franka_gripper_bridge::callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_
 	}
 	return true;
 }
+
+bool franka_gripper_bridge::callback_rpwc_gripper_single_move_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpwc::rpwc_gripper_cmd::Response &res)
+{
+
+	move_goal_.width = req.EE_cmd_.data;
+	ac_move.sendGoal(move_goal_);
+
+	
+	// if(req.EE_cmd_.data >= 0.5 && !grasping_)
+	// {
+	// 	grasping_ = true;
+	// 	ac_grasp.sendGoal(grasp_goal_);
+	// }
+	// else if(req.EE_cmd_.data < 0.5 && grasping_)
+	// {
+	// 	grasping_ = false;
+	// 	ac_move.sendGoal(move_goal_);
+	// }
+	return true;
+}
