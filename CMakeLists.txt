@@ -232,6 +232,10 @@ add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
 add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
+add_executable(softhand_industry_bridge_node src/main_softhand_industry_bridge.cpp)
+add_dependencies(softhand_industry_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(softhand_industry_bridge_node ${catkin_LIBRARIES})
+
 add_executable(launch_from_web_node src/main_launch_from_web.cpp)
 add_dependencies(launch_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(launch_from_web_node ${catkin_LIBRARIES} ${Poco_LIBRARIES})
