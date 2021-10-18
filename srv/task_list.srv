@@ -1,0 +1,4 @@
+---
+std_msgs/String[] first_task_names
+std_msgs/String[] other_task_names
+std_msgs/Int32[] num_task

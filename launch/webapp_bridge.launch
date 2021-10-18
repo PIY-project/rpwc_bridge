@@ -10,4 +10,7 @@
 	<!-- camera bridge -->
     <node pkg="rpwc_bridge" name="cam_from_web" type="cam_from_web_node" output="screen"/>
 
+    <node pkg="rpwc_bridge" name="request_from_web" type="request_from_web_node" output="screen"/>
+
+
 </launch>
