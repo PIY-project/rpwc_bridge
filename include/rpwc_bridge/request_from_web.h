@@ -26,6 +26,7 @@ class request_from_web
 
 		bool callback_task_list(rpwc_bridge::task_list::Request  &req, rpwc_bridge::task_list::Response &res);
 
+
 		void read_directory(const std::string& name, std::vector<std::string>& v);
 
 

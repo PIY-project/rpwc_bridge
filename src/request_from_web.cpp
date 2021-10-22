@@ -15,7 +15,7 @@ request_from_web::~request_from_web()
 }
 
 
-//restituisce la lista dei task salvati, num_task array contenente il num di subtask per ogni task, first_task_names array contenente la lista degli start sub tasks
+//restituisce la lista dei task salvati, num_task array contenente il num di subtask per ogni task, subtask_names array contenente la lista degli  sub tasks
 bool request_from_web::callback_task_list(rpwc_bridge::task_list::Request  &req, rpwc_bridge::task_list::Response &res)
 {
     std::string path_obj_struct = path_pack_ + "/obj_structures";
@@ -31,7 +31,7 @@ bool request_from_web::callback_task_list(rpwc_bridge::task_list::Request  &req,
             tmp_subtask_name.data.clear();
             tmp_subtask_name.data = task_list[i];
             tmp_subtask_name.data.erase (tmp_subtask_name.data.length()-5); //cancella .yaml 
-            res.first_task_names.push_back(tmp_subtask_name);
+            res.subtask_names.push_back(tmp_subtask_name);
 
             std::string path_yaml = path_pack_ + "/obj_structures/" + task_list[i];
             YAML::Node obj_yaml = YAML::LoadFile(path_yaml);
@@ -46,7 +46,8 @@ bool request_from_web::callback_task_list(rpwc_bridge::task_list::Request  &req,
             {
                 tmp_subtask_name.data.clear();
                 tmp_subtask_name.data = tmp_child;
-                res.other_task_names.push_back(tmp_subtask_name);
+                // res.other_task_names.push_back(tmp_subtask_name);
+                res.subtask_names.push_back(tmp_subtask_name);
                 path_yaml.clear();
                 path_yaml = path_pack_ + "/obj_structures/" + tmp_child + ".yaml";
                 YAML::Node obj_yaml = YAML::LoadFile(path_yaml);
@@ -57,6 +58,7 @@ bool request_from_web::callback_task_list(rpwc_bridge::task_list::Request  &req,
     }
     return true;
 }
+
 
 void request_from_web::read_directory(const std::string& name, std::vector<std::string>& v)
 {

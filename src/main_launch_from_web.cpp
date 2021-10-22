@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Empty.h>
+#include <std_srvs/Empty.h>
 #include "Poco/Process.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -9,11 +10,13 @@
 
 
 Poco::ProcessHandle* ph;
+Poco::ProcessHandle* ph_aruco_;
 Poco::ProcessHandle* ph_jog_mode_;
 std::string last_jog_mode = "none";
 
 
 bool running = false;
+bool running_aruco_ = false;
 bool running_arm_ = false;
 bool running_ee_ = false;
 bool running_cam_ = false;
@@ -199,6 +202,30 @@ bool callback_jog_launch(rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_brid
     return true;
 }
 
+// rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_bridge::set_jog_mode_web::Response &res
+
+bool callback_launch_aruco(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res){
+    if(!running_aruco_){
+        std::vector<std::string> args;
+        std::string launch_file;
+        launch_file = "rpwc_bridge single.launch";
+        boost::split(args, launch_file, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
+        Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
+        ph_aruco_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
+        running_aruco_ = true; //Refuse new launch
+        ROS_INFO_STREAM("launched : roslaunch " << launch_file);
+    }
+    else{
+        // ROS_ERROR("A process is already running.");
+        Poco::Process::requestTermination(ph_aruco_->id()); //send SIGINT
+        Poco::Process::wait(*ph_aruco_); //Wait for roslaunch to kill every node
+        free(ph_aruco_);  
+        running_aruco_ = false;  //accept a new launch
+        ROS_INFO("Killed process");
+    }
+
+    return true;
+}
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "node_runner");
@@ -209,6 +236,7 @@ int main(int argc, char** argv){
 
     ros::ServiceServer service_hw = n.advertiseService("/hw_launch", callback_hw_launch);
     ros::ServiceServer service_jog = n.advertiseService("/jog_launch", callback_jog_launch);
+    ros::ServiceServer service_aruco = n.advertiseService("/aruco_launch", callback_launch_aruco);
 
     while(ros::ok())
     {
