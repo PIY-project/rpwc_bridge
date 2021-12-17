@@ -12,6 +12,7 @@
 Poco::ProcessHandle* ph;
 Poco::ProcessHandle* ph_aruco_;
 Poco::ProcessHandle* ph_jog_mode_;
+Poco::ProcessHandle* ph_rosserial_;
 std::string last_jog_mode = "none";
 
 
@@ -20,6 +21,7 @@ bool running_aruco_ = false;
 bool running_arm_ = false;
 bool running_ee_ = false;
 bool running_cam_ = false;
+bool first_time_teleop_jog_ = true;
 
 std::vector<Poco::ProcessHandle *> ph_vec_;
 std::vector<std::string> names_vec_;
@@ -122,60 +124,6 @@ bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge:
 
 bool callback_jog_launch(rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_bridge::set_jog_mode_web::Response &res)
 {
-
-    // std::string jog_mode = req.jog_mode_name.data;
-
-    // if(jog_mode.compare(last_jog_mode) != 0)
-    // {
-    //     std::string cmd_line;
-    //     if(jog_mode.compare("teleop") == 0)
-    //     {
-    //         cmd_line = "oculus_robot_bridge rpwc_oculus_bridge.launch ns_setup:="  + req.ns.data;
-    //         std::vector<std::string> args;
-    //         boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
-    //         Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
-    //         ph_jog_mode_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
-    //     }
-    //     else if(jog_mode.compare("smart") == 0)
-    //     {
-    //         // cmd_line = "---------------------------------------.launch ns_setup:="  + req.ns.data;
-    //         // std::vector<std::string> args;
-    //         // boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
-    //         // Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
-    //         // ph_jog_mode_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
-    //     }
-    //     else if(jog_mode.compare("gravity") == 0)
-    //     {
-    //         if(last_jog_mode.compare("none") != 0)
-    //         {
-    //             // kill process ph_jog_mode_
-    //             Poco::Process::requestTermination(ph_jog_mode_->id()); //send SIGINT
-    //             Poco::Process::wait(*ph_jog_mode_); //Wait for roslaunch to kill every node
-    //             free(ph_jog_mode_); 
-    //         }
-    //         // call service to switch_ctr_from_web
-    //     }
-    //     else if(jog_mode.compare("none") == 0)
-    //     {
-    //         if(last_jog_mode.compare("gravity") != 0)
-    //         {
-    //             // kill process ph_jog_mode_
-    //             Poco::Process::requestTermination(ph_jog_mode_->id()); //send SIGINT
-    //             Poco::Process::wait(*ph_jog_mode_); //Wait for roslaunch to kill every node
-    //             free(ph_jog_mode_); 
-    //         }
-    //         else
-    //         {
-    //             // call service to switch_ctr_from_web in position control
-    //         }
-            
-    //     }
-    // }
-
-    // last_jog_mode = jog_mode;
-
-
-    //////////////////newwww
     std::string jog_mode = req.jog_mode_name.data;
 
     if(last_jog_mode.compare("none") != 0)
@@ -186,10 +134,20 @@ bool callback_jog_launch(rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_brid
         free(ph_jog_mode_); 
     }
 
-    std::string cmd_line;
+    
     if(jog_mode.compare("teleop") == 0)
     {
-        cmd_line = "oculus_robot_bridge rpwc_oculus_bridge.launch ns_setup:="  + req.ns.data;
+        if(first_time_teleop_jog_)//la prima volta mandi anche rosserial
+        {
+            std::string cmd_line = "rosserial_server socket.launch";
+            std::vector<std::string> args;
+            boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
+            Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
+            ph_rosserial_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
+            first_time_teleop_jog_ = false;
+        }
+
+        std::string cmd_line = "oculus_robot_bridge without_roserial_rpwc_oculus_bridge.launch ns_setup:="  + req.ns.data;
         std::vector<std::string> args;
         boost::split(args, cmd_line, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
         Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
@@ -204,28 +162,28 @@ bool callback_jog_launch(rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_brid
 
 // rpwc_bridge::set_jog_mode_web::Request  &req, rpwc_bridge::set_jog_mode_web::Response &res
 
-bool callback_launch_aruco(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res){
-    if(!running_aruco_){
-        std::vector<std::string> args;
-        std::string launch_file;
-        launch_file = "rpwc_bridge single.launch";
-        boost::split(args, launch_file, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
-        Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
-        ph_aruco_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
-        running_aruco_ = true; //Refuse new launch
-        ROS_INFO_STREAM("launched : roslaunch " << launch_file);
-    }
-    else{
-        // ROS_ERROR("A process is already running.");
-        Poco::Process::requestTermination(ph_aruco_->id()); //send SIGINT
-        Poco::Process::wait(*ph_aruco_); //Wait for roslaunch to kill every node
-        free(ph_aruco_);  
-        running_aruco_ = false;  //accept a new launch
-        ROS_INFO("Killed process");
-    }
+// bool callback_launch_aruco(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res){
+//     if(!running_aruco_){
+//         std::vector<std::string> args;
+//         std::string launch_file;
+//         launch_file = "rpwc_bridge single.launch";
+//         boost::split(args, launch_file, boost::is_any_of(" ") ); //Split the msg.data on space and save it to a vector
+//         Poco::ProcessHandle ph_running = Poco::Process::launch("roslaunch", args,0,0,0); //launch a new node
+//         ph_aruco_ = new Poco::ProcessHandle(ph_running); // Copy the processhandler to our global variable
+//         running_aruco_ = true; //Refuse new launch
+//         ROS_INFO_STREAM("launched : roslaunch " << launch_file);
+//     }
+//     else{
+//         // ROS_ERROR("A process is already running.");
+//         Poco::Process::requestTermination(ph_aruco_->id()); //send SIGINT
+//         Poco::Process::wait(*ph_aruco_); //Wait for roslaunch to kill every node
+//         free(ph_aruco_);  
+//         running_aruco_ = false;  //accept a new launch
+//         ROS_INFO("Killed process");
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "node_runner");
@@ -236,12 +194,36 @@ int main(int argc, char** argv){
 
     ros::ServiceServer service_hw = n.advertiseService("/hw_launch", callback_hw_launch);
     ros::ServiceServer service_jog = n.advertiseService("/jog_launch", callback_jog_launch);
-    ros::ServiceServer service_aruco = n.advertiseService("/aruco_launch", callback_launch_aruco);
+    // ros::ServiceServer service_aruco = n.advertiseService("/aruco_launch", callback_launch_aruco);
 
     while(ros::ok())
     {
         ros::spinOnce();
         r.sleep();
     }// end while()
+
+    //kill processes
+    for(int i = 0 ; i < ph_vec_.size(); i++)
+    {
+        Poco::Process::requestTermination(ph_vec_[i]->id()); //send SIGINT
+        Poco::Process::wait(*ph_vec_[i]); //Wait for roslaunch to kill every node
+        free(ph_vec_[i]);
+    }
+
+    if(!first_time_teleop_jog_)
+    {
+        // kill process ph_jog_mode_
+        Poco::Process::requestTermination(ph_rosserial_->id()); //send SIGINT
+        Poco::Process::wait(*ph_rosserial_); //Wait for roslaunch to kill every node
+        free(ph_rosserial_); 
+    }
+
+    if(last_jog_mode.compare("none") != 0)
+    {
+        // kill process ph_jog_mode_
+        Poco::Process::requestTermination(ph_jog_mode_->id()); //send SIGINT
+        Poco::Process::wait(*ph_jog_mode_); //Wait for roslaunch to kill every node
+        free(ph_jog_mode_); 
+    }
     return 0;
 }
