@@ -6,7 +6,7 @@ franka_bridge::franka_bridge()
 	sub_curr_pos_ = n_.subscribe("franka_state_controller/franka_states", 1, &franka_bridge::callback_curr_pose, this);
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
 	//Publisher
-    pub_pos_des_ = n_.advertise<geometry_msgs::PoseStamped>("pose_des", 1);
+    pub_pos_des_ = n_.advertise<geometry_msgs::Pose>("pose_des", 1);
     pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("rpwc_robot_curr_pose", 1);
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
@@ -72,15 +72,14 @@ void franka_bridge::callback_curr_pose(const franka_msgs::FrankaState::ConstPtr&
 
 void franka_bridge::callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg)
 {
-	geometry_msgs::PoseStamped send_pose;
-	send_pose.pose.position.x = msg->position.x;
-	send_pose.pose.position.y = msg->position.y;
-	send_pose.pose.position.z = msg->position.z;
-	send_pose.pose.orientation.w = msg->orientation.w;
-  	send_pose.pose.orientation.x = msg->orientation.x;
-  	send_pose.pose.orientation.y = msg->orientation.y;
-  	send_pose.pose.orientation.z = msg->orientation.z;
-  	send_pose.header.stamp = ros::Time::now();
+	geometry_msgs::Pose send_pose;
+	send_pose.position.x = msg->position.x;
+	send_pose.position.y = msg->position.y;
+	send_pose.position.z = msg->position.z;
+	send_pose.orientation.w = msg->orientation.w;
+  	send_pose.orientation.x = msg->orientation.x;
+  	send_pose.orientation.y = msg->orientation.y;
+  	send_pose.orientation.z = msg->orientation.z;
 	pub_pos_des_.publish(send_pose);
 }
 

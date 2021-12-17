@@ -268,3 +268,7 @@ target_link_libraries(abb_bridge_node ${catkin_LIBRARIES})
 add_executable(request_from_web_node src/main_request_from_web.cpp src/request_from_web.cpp)
 add_dependencies(request_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(request_from_web_node ${catkin_LIBRARIES} yaml-cpp)
+
+add_executable(test_abb_bridge_node src/main_test_abb_bridge.cpp src/test_abb_bridge.cpp src/arm_base_bridge.cpp)
+add_dependencies(test_abb_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(test_abb_bridge_node ${catkin_LIBRARIES})
