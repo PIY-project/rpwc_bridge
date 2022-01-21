@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
 #   apriltag_ros
   message_generation
+  image_transport
 )
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
@@ -252,6 +253,9 @@ add_executable(cam_from_web_node src/main_cam_from_web.cpp)
 add_dependencies(cam_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cam_from_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
+add_executable(cam_to_web_node src/main_cam_to_web.cpp)
+add_dependencies(cam_to_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(cam_to_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(ur_bridge_node src/main_ur_bridge.cpp src/ur_bridge.cpp )
 add_dependencies(ur_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
