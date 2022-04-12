@@ -17,9 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   pcl_conversions
   pcl_ros
-#   apriltag_ros
   message_generation
   image_transport
+  zivid_camera
 )
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
@@ -72,6 +72,7 @@ add_service_files(
   set_controller_web.srv
   set_jog_mode_web.srv
   task_list.srv
+  CameraData.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -85,6 +86,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -237,6 +239,14 @@ add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
 add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
+add_executable(onrobot_twofg_bridge_node src/main_onrobot_twofg_bridge.cpp)
+add_dependencies(onrobot_twofg_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(onrobot_twofg_bridge_node ${catkin_LIBRARIES})
+
+add_executable(softhand_2_bridge_node src/main_softhand_2_bridge.cpp)
+add_dependencies(softhand_2_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(softhand_2_bridge_node ${catkin_LIBRARIES})
+
 add_executable(softhand_industry_bridge_node src/main_softhand_industry_bridge.cpp)
 add_dependencies(softhand_industry_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softhand_industry_bridge_node ${catkin_LIBRARIES})
@@ -276,3 +286,7 @@ target_link_libraries(request_from_web_node ${catkin_LIBRARIES} yaml-cpp)
 add_executable(test_abb_bridge_node src/main_test_abb_bridge.cpp src/test_abb_bridge.cpp src/arm_base_bridge.cpp)
 add_dependencies(test_abb_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(test_abb_bridge_node ${catkin_LIBRARIES})
+
+add_executable(zivid_bridge_node src/main_zivid_bridge.cpp src/zivid_bridge.cpp )
+add_dependencies(zivid_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(zivid_bridge_node ${catkin_LIBRARIES})

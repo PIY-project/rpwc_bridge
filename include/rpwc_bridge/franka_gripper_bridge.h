@@ -28,7 +28,7 @@ public:
 		grasp_goal_.epsilon.inner = 0.005;
 		grasp_goal_.epsilon.outer = 0.085;
 		grasp_goal_.speed = 0.5;
-		grasp_goal_.force = 60;
+		grasp_goal_.force = 40;
 
 		move_goal_.width = 0.09;
 		move_goal_.speed = 0.1;
