@@ -16,13 +16,15 @@ bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpw
 	if(req.EE_cmd_.data >= 0.5 && !grasping_)
 	{
 		grasping_ = true;
-		cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
+		// cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
+		cmd_msg_.position = int(0);
 		pub_gripper_des_.publish(cmd_msg_);
 	}
 	else if(req.EE_cmd_.data < 0.5 && grasping_)
 	{
 		grasping_ = false;
-		cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
+		// cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
+		cmd_msg_.position = int(45);
 		pub_gripper_des_.publish(cmd_msg_);
 	}
 
@@ -31,18 +33,20 @@ bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpw
 
 void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
 {
-  	if(msg->data >= 0.5 && !grasping_)
-	{
-		grasping_ = true;
-		cmd_msg_.position = int(0);
-		pub_gripper_des_.publish(cmd_msg_);
-	}
-	else if(msg->data < 0.5 && grasping_)
-	{
-		grasping_ = false;
-		cmd_msg_.position = int(45);
-		pub_gripper_des_.publish(cmd_msg_);
-	}
+ //  	if(msg->data >= 0.5 && !grasping_)
+	// {
+	// 	grasping_ = true;
+	// 	cmd_msg_.position = int(0);
+	// 	pub_gripper_des_.publish(cmd_msg_);
+	// }
+	// else if(msg->data < 0.5 && grasping_)
+	// {
+	// 	grasping_ = false;
+	// 	cmd_msg_.position = int(45);
+	// 	pub_gripper_des_.publish(cmd_msg_);
+	// }
+	cmd_msg_.position = int(45-(msg->data*45));
+	pub_gripper_des_.publish(cmd_msg_);
 }
 
 
@@ -56,11 +60,11 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 
 
-  	double rate_50Hz = 50.0;
-	ros::Rate r_50HZ(rate_50Hz);
+  	double rate_30Hz = 30.0;
+	ros::Rate r_30HZ(rate_30Hz);
 
-	cmd_msg_.force = 60;
-	cmd_msg_.velocity = 100;
+	cmd_msg_.force = 20;
+	cmd_msg_.velocity = 80;
 
 	//Subscriber
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
@@ -75,7 +79,7 @@ int main(int argc, char **argv)
 	while(ros::ok())
 	{
 		ros::spinOnce();
-		r_50HZ.sleep();
+		r_30HZ.sleep();
 	}// end while()
 	return 0;
 }

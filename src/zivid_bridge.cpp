@@ -11,7 +11,7 @@ zivid_bridge::zivid_bridge()
   flag_img_ = false;
 
   // Subscibers
-  points_sub_             = n.subscribe("/zivid_camera/points/xyzrgba", 1, &zivid_bridge::on_points, this);
+  points_sub_             = n.subscribe("/zivid_camera/points/xyzrgb", 1, &zivid_bridge::on_points, this);
   image_color_sub_        = n.subscribe("/zivid_camera/color/image_color", 1, &zivid_bridge::on_image_color, this);
   // Publishers
   points_pub_ 		        = n.advertise<sensor_msgs::PointCloud2>("/camera/depth_registered/points", 1);
@@ -29,7 +29,7 @@ void zivid_bridge::on_points(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
   ROS_INFO("PointCloud received");
   msg_pc2_  = *msg;
-  points_pub_.publish(msg_pc2_);
+  // points_pub_.publish(msg_pc2_);
   flag_pc2_ = true;
 }
 
@@ -39,16 +39,16 @@ void zivid_bridge::on_image_color(const sensor_msgs::Image::ConstPtr& msg)
   cv_bridge::CvImagePtr cv_ptr;
   cv_ptr   = cv_bridge::toCvCopy(msg, "rgb8");                                            // Transforming image encoding to rgb8
   msg_img_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", cv_ptr->image).toImageMsg();
-  image_color_pub_.publish(*msg_img_);
+  // image_color_pub_.publish(*msg_img_);
   flag_img_ = true;
 }
 
 bool zivid_bridge::callback_camera_data(rpwc_bridge::CameraData::Request &req, rpwc_bridge::CameraData::Response &res)
 {
   zivid_camera::LoadSettingsFromFile file;
-  file.request.file_path = req.file_path;
+  // file.request.file_path = req.file_path;
   
-  //file.request.file_path = "/home/nuk1/catkin_ws/src/zivid-ros/zivid_samples/test.yml";
+  file.request.file_path = "/home/nuk1/catkin_ws/src/zivid-ros/zivid_samples/test10sec.yml";
   if (load_settings_.call(file)) ROS_INFO("Loading image settings");
   else ROS_ERROR("Failed to call service load_settings_from_file");  
 
