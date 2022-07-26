@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <franka_msgs/FrankaState.h>
-#include <rpwc/robot_curr_pose.h>
+#include <rpwc_msgs/robotArmState.h>
 #include <rpwc_bridge/set_controller.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
@@ -25,7 +25,7 @@ private:
 
 	void callback_curr_pose(const franka_msgs::FrankaState::ConstPtr& msg);
 	void callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg);
-	bool callback_robot_curr_pose(rpwc::robot_curr_pose::Request  &req, rpwc::robot_curr_pose::Response &res);
+	bool callback_robot_curr_pose(rpwc_msgs::robotArmState::Request  &req, rpwc_msgs::robotArmState::Response &res);
 	bool callback_switch_controller(rpwc_bridge::set_controller::Request  &req, rpwc_bridge::set_controller::Response &res);
 
 
