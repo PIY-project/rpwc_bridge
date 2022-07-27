@@ -1,7 +1,6 @@
 #include <ros/ros.h>
 #include <rpwc_msgs/robotMobileBaseState.h>
-#include <geometry_msgs/Pose2D.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 
 
@@ -23,13 +22,10 @@ private:
 	ros::NodeHandle n_;
 
 	void callback_curr_pose(const nav_msgs::Odometry::ConstPtr& msg);
-	void callback_rpwc_pose_des(const geometry_msgs::Pose2D::ConstPtr& msg);
+	void callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg);
 	bool callback_robot_curr_pose(rpwc_msgs::robotMobileBaseState::Request  &req, rpwc_msgs::robotMobileBaseState::Response &res);
 
- 	double UnwrapAngle(double yaw_unwrapped, double yaw);
-    double AngleDiff(double angle_a, double angle_b);
-
-	double x_curr, y_curr, yaw_curr;
+	nav_msgs::Odometry odom_curr;
 	ros::Subscriber sub_curr_pos_, sub_rpwc_pose_des_;
 	ros::Publisher pub_pos_des_, pub_vel_des_ ,pub_curr_pos_;
 	ros::ServiceServer server_robot_curr_pose_;
