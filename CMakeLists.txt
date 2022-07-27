@@ -235,9 +235,9 @@ add_executable(summit_xls_steel_cl_bridge_node src/main_summit_xls_steel_cl_brid
 add_dependencies(summit_xls_steel_cl_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(summit_xls_steel_cl_bridge_node ${catkin_LIBRARIES})
 
-add_executable(summit_lidar_2d_bridge_node src/main_summit_lidar_2d_bridge.cpp src/summit_lidar_2d_bridge.cpp )
-add_dependencies(summit_lidar_2d_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(summit_lidar_2d_bridge_node ${catkin_LIBRARIES})
+add_executable(lidar_2D_bridge_node src/lidar_2D_bridge.cpp )
+add_dependencies(lidar_2D_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(lidar_2D_bridge_node ${catkin_LIBRARIES})
 
 # add_executable(franka_gripper_bridge_node src/main_franka_gripper_bridge.cpp src/franka_gripper_bridge.cpp)
 # add_dependencies(franka_gripper_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
