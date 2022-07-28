@@ -27,7 +27,7 @@ private:
 
 	nav_msgs::Odometry odom_curr;
 	ros::Subscriber sub_curr_pos_, sub_rpwc_pose_des_;
-	ros::Publisher pub_pos_des_, pub_vel_des_ ,pub_curr_pos_;
+	ros::Publisher pub_pos_des_ ,pub_curr_pos_;
 	ros::ServiceServer server_robot_curr_pose_;
 
 
