@@ -7,7 +7,7 @@ abb_bridge::abb_bridge()
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &abb_bridge::callback_rpwc_pose_des, this);
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::Pose>("pose_des", 1);
-    pub_curr_pos_ = n_.advertise<geometry_msgs::Pose>("rpwc_robot_curr_pose", 1);
+    pub_curr_pos_ = n_.advertise<geometry_msgs::PoseStamped>("rpwc_robot_curr_pose", 1);
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &abb_bridge::callback_robot_curr_pose, this);
   	
@@ -28,7 +28,11 @@ abb_bridge::~abb_bridge()
 void abb_bridge::callback_curr_pose(const geometry_msgs::Pose::ConstPtr& msg)
 {
 	msg_pose_ = *msg;
-	pub_curr_pos_.publish(msg_pose_);
+
+	geometry_msgs::PoseStamped msg_poseStamped;
+	msg_poseStamped.pose = msg_pose_;
+	msg_poseStamped.header.stamp = ros::Time::now();
+	pub_curr_pos_.publish(msg_poseStamped);
 }
 
 void abb_bridge::callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg)
@@ -44,9 +48,10 @@ void abb_bridge::callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg
 	pub_pos_des_.publish(send_pose);
 }
 
-bool abb_bridge::callback_robot_curr_pose(rpwc::robot_curr_pose::Request  &req, rpwc::robot_curr_pose::Response &res)
+bool abb_bridge::callback_robot_curr_pose(rpwc_msgs::robotArmState::Request  &req, rpwc_msgs::robotArmState::Response &res)
 {
-	res.robot_curr_pose = msg_pose_;
+	res.pose.pose = msg_pose_;
+	res.pose.header.stamp = ros::Time::now();
 	return true;
 }
 
