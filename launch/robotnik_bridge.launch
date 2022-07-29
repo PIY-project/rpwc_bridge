@@ -1,0 +1,12 @@
+ <launch>
+
+
+    <group ns="setup1/sensor1">
+		<node pkg="rpwc_bridge" name="lidar_2D_bridge" type="lidar_2D_bridge_node" output="screen"/>
+	</group> 
+
+  <group ns="setup1/robot1">
+		<node pkg="rpwc_bridge" name="summit_xls_steel_cl_bridge" type="summit_xls_steel_cl_bridge_node" output="screen"/>
+	</group> 
+
+</launch>
