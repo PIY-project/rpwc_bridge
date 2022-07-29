@@ -21,6 +21,8 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   #zivid_camera
 )
+
+
 set(Poco_DIR cmake)
 find_package(Poco REQUIRED COMPONENTS Foundation)
 find_package(OpenCV)
