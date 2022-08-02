@@ -11,16 +11,15 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "summit_xls_steel_cl_bridge_node");
 	summit_xls_steel_cl_bridge Obj;
-  	double rate_100Hz = 100.0;
-	ros::Rate r_100HZ(rate_100Hz);
+  	
+  	double rate_Hz = 20.0;
+	ros::Rate rate_HZ(rate_Hz);
 
-	
-	Obj.dt_ = 1.0/rate_100Hz;
 
 	while(ros::ok())
 	{
 		ros::spinOnce();
-		r_100HZ.sleep();
-	}// end while()
+		rate_HZ.sleep();
+	}// end while() 
 	return 0;
 }
