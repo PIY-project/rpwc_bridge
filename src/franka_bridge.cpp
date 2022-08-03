@@ -3,7 +3,8 @@
 franka_bridge::franka_bridge()
 {
 	//Subscriber
-	sub_curr_pos_ = n_.subscribe("franka_state_controller/franka_states", 1, &franka_bridge::callback_curr_pose, this);
+	sub_curr_pos_ = n_.subscribe("franka_ee_pose", 1, &franka_bridge::callback_curr_pose, this);
+	// sub_curr_pos_ = n_.subscribe("franka_state_controller/franka_states", 1, &franka_bridge::callback_curr_pose, this);
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::Pose>("pose_des", 1);
@@ -11,10 +12,9 @@ franka_bridge::franka_bridge()
 	//Service Server
   	server_robot_curr_pose_ = n_.advertiseService("rpwc_robot_curr_pose", &franka_bridge::callback_robot_curr_pose, this);
   	
-  	server_switch_controller_ = n_.advertiseService("rpwc_switch_arm_controller", &franka_bridge::callback_switch_controller, this);
+  	//server_switch_controller_ = n_.advertiseService("rpwc_switch_arm_controller", &franka_bridge::callback_switch_controller, this);
   	client_switch_controller_ = n_.serviceClient<controller_manager_msgs::SwitchController>("controller_manager/switch_controller");
 
-	T_base_2_EE_ = Eigen::Matrix4d::Identity();
 	old_controller_name_ = "joint_position_one_task_inv_kin";
 
 	first_quat_base_EE_ = true;
@@ -25,25 +25,10 @@ franka_bridge::~franka_bridge()
 
 }
 
-void franka_bridge::callback_curr_pose(const franka_msgs::FrankaState::ConstPtr& msg)
+void franka_bridge::callback_curr_pose(const geometry_msgs::Pose::ConstPtr& msg)
 {
-	T_base_2_EE_(0,0) = msg->O_T_EE[0];
-	T_base_2_EE_(1,0) = msg->O_T_EE[1];
-	T_base_2_EE_(2,0) = msg->O_T_EE[2];
-	T_base_2_EE_(3,0) = msg->O_T_EE[3];
-	T_base_2_EE_(0,1) = msg->O_T_EE[4];
-	T_base_2_EE_(1,1) = msg->O_T_EE[5];
-	T_base_2_EE_(2,1) = msg->O_T_EE[6];
-	T_base_2_EE_(3,1) = msg->O_T_EE[7];
-	T_base_2_EE_(0,2) = msg->O_T_EE[8];
-	T_base_2_EE_(1,2) = msg->O_T_EE[9];
-	T_base_2_EE_(2,2) = msg->O_T_EE[10];
-	T_base_2_EE_(3,2) = msg->O_T_EE[11];
-	T_base_2_EE_(0,3) = msg->O_T_EE[12];
-	T_base_2_EE_(1,3) = msg->O_T_EE[13];
-	T_base_2_EE_(2,3) = msg->O_T_EE[14];
-	T_base_2_EE_(3,3) = msg->O_T_EE[15];
-	quat_base2EE_ = T_base_2_EE_.block<3,3>(0,0);
+	quat_base2EE_.vec() << msg->orientation.x, msg->orientation.y, msg->orientation.z;
+	quat_base2EE_.w() = msg->orientation.w;
 	// rotation to quaternion issue , "Sign Flip" , check  http://www.dtic.mil/dtic/tr/fulltext/u2/1043624.pdf
 	if(first_quat_base_EE_)
 	{
@@ -59,16 +44,15 @@ void franka_bridge::callback_curr_pose(const franka_msgs::FrankaState::ConstPtr&
 	}
 	quat_base2EE_old_ = quat_base2EE_;
 
-	geometry_msgs::PoseStamped msg_pose;
-	msg_pose.pose.orientation.w = quat_base2EE_.w();
-	msg_pose.pose.orientation.x = quat_base2EE_.x();
-	msg_pose.pose.orientation.y = quat_base2EE_.y();
-	msg_pose.pose.orientation.z = quat_base2EE_.z();
-	msg_pose.pose.position.x = T_base_2_EE_(0,3);
-	msg_pose.pose.position.y = T_base_2_EE_(1,3);
-	msg_pose.pose.position.z = T_base_2_EE_(2,3);
-	msg_pose.header.stamp = ros::Time::now();
-	pub_curr_pos_.publish(msg_pose);
+	msg_pose_.pose.orientation.w = quat_base2EE_.w();
+	msg_pose_.pose.orientation.x = quat_base2EE_.x();
+	msg_pose_.pose.orientation.y = quat_base2EE_.y();
+	msg_pose_.pose.orientation.z = quat_base2EE_.z();
+	msg_pose_.pose.position.x = msg->position.x;
+	msg_pose_.pose.position.y = msg->position.y;
+	msg_pose_.pose.position.z = msg->position.z;
+	msg_pose_.header.stamp = ros::Time::now();
+	pub_curr_pos_.publish(msg_pose_);
 }
 
 void franka_bridge::callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg)
@@ -86,17 +70,7 @@ void franka_bridge::callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& 
 
 bool franka_bridge::callback_robot_curr_pose(rpwc_msgs::robotArmState::Request  &req, rpwc_msgs::robotArmState::Response &res)
 {
-	geometry_msgs::PoseStamped robot_curr_pose;
-	robot_curr_pose.pose.orientation.w = quat_base2EE_.w();
-	robot_curr_pose.pose.orientation.x = quat_base2EE_.x();
-	robot_curr_pose.pose.orientation.y = quat_base2EE_.y();
-	robot_curr_pose.pose.orientation.z = quat_base2EE_.z();
-	robot_curr_pose.pose.position.x = T_base_2_EE_(0,3);
-	robot_curr_pose.pose.position.y = T_base_2_EE_(1,3);
-	robot_curr_pose.pose.position.z = T_base_2_EE_(2,3);
-	robot_curr_pose.header.stamp = ros::Time::now();
-
-	res.pose = robot_curr_pose;
+	msg_pose_.header.stamp = ros::Time::now();
+	res.pose = msg_pose_;
 	return true;
 }
-

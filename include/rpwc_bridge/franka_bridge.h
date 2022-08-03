@@ -23,10 +23,11 @@ public:
 private:
 	ros::NodeHandle n_;
 
-	void callback_curr_pose(const franka_msgs::FrankaState::ConstPtr& msg);
+	void callback_curr_pose(const  geometry_msgs::Pose::ConstPtr& msg);
 	void callback_rpwc_pose_des(const geometry_msgs::Pose::ConstPtr& msg);
 	bool callback_robot_curr_pose(rpwc_msgs::robotArmState::Request  &req, rpwc_msgs::robotArmState::Response &res);
-	bool callback_switch_controller(rpwc_bridge::set_controller::Request  &req, rpwc_bridge::set_controller::Response &res);
+	//bool callback_switch_controller(rpwc_bridge::set_controller::Request  &req, rpwc_bridge::set_controller::Response &res);
+
 
 
 	ros::Subscriber sub_curr_pos_, sub_rpwc_pose_des_;
@@ -35,8 +36,8 @@ private:
 	ros::ServiceClient client_switch_controller_;
 
 	Eigen::Quaterniond quat_base2EE_, quat_base2EE_old_;
-	Eigen::Matrix4d T_base_2_EE_;
 	bool first_quat_base_EE_;
 	std::string controller_name_, old_controller_name_;
+	geometry_msgs::PoseStamped msg_pose_;
 
 };//End of class SubscribeAndPublish
