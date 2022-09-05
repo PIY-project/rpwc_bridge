@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   message_generation
   image_transport
+  rpwc_msgs
   #zivid_camera
 )
 
@@ -245,9 +246,9 @@ target_link_libraries(lidar_2D_bridge_node ${catkin_LIBRARIES})
 # add_dependencies(franka_gripper_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(franka_gripper_bridge_node ${catkin_LIBRARIES})
 
-# add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
-# add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
+add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
+add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
 # add_executable(onrobot_twofg_bridge_node src/main_onrobot_twofg_bridge.cpp)
 # add_dependencies(onrobot_twofg_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
