@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 
 	ros::ServiceServer serverLidar2D = nh.advertiseService("lidar2D", callbackServerLidar2D); 
 
-    ros::Subscriber sub_scan = nh.subscribe("robot/merged_laser/scan", 1, &callback_scan);
+    ros::Subscriber sub_scan = nh.subscribe("/robot/merged_laser/scan", 1, &callback_scan);
 	
 	while (ros::ok())
 	{
