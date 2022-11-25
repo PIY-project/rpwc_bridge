@@ -1,52 +1,28 @@
 
 #include <ros/ros.h>
 #include <ros/rate.h>
-#include <rpwc/rpwc_gripper_cmd.h>
 #include <std_msgs/Float64.h>
 #include <onrobot_msgs/onrobot_gripper.h>
+#include <rpwc_msgs/RobotEeStateStamped.h>
 
 
 
-ros::Publisher pub_gripper_des_;
+ros::Publisher pub_gripper_des_, pub_for_recording_;
 bool grasping_ = false;
 onrobot_msgs::onrobot_gripper cmd_msg_;
 
-bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpwc::rpwc_gripper_cmd::Response &res)
-{
-	if(req.EE_cmd_.data >= 0.5 && !grasping_)
-	{
-		grasping_ = true;
-		// cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
-		cmd_msg_.position = int(0);
-		pub_gripper_des_.publish(cmd_msg_);
-	}
-	else if(req.EE_cmd_.data < 0.5 && grasping_)
-	{
-		grasping_ = false;
-		// cmd_msg_.position = int(45-(req.EE_cmd_.data*45));
-		cmd_msg_.position = int(45);
-		pub_gripper_des_.publish(cmd_msg_);
-	}
 
-	return true;
-}
 
 void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
 {
- //  	if(msg->data >= 0.5 && !grasping_)
-	// {
-	// 	grasping_ = true;
-	// 	cmd_msg_.position = int(0);
-	// 	pub_gripper_des_.publish(cmd_msg_);
-	// }
-	// else if(msg->data < 0.5 && grasping_)
-	// {
-	// 	grasping_ = false;
-	// 	cmd_msg_.position = int(45);
-	// 	pub_gripper_des_.publish(cmd_msg_);
-	// }
 	cmd_msg_.position = int(45-(msg->data*45));
+
+	rpwc_msgs::RobotEeStateStamped tmpMsg;
+	tmpMsg.data.data = msg->data;
+	tmpMsg.header.stamp = ros::Time::now();
+
 	pub_gripper_des_.publish(cmd_msg_);
+	pub_for_recording_.publish(tmpMsg);
 }
 
 
@@ -70,11 +46,7 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
   	//Publisher
     pub_gripper_des_ = nh.advertise<onrobot_msgs::onrobot_gripper>("set_width", 1);
-
-	//Service Server
-  	ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("rpwc_EE_single_cmd", &callback_rpwc_gripper_single_cmd);
-
-
+	pub_for_recording_ = nh.advertise<rpwc_msgs::RobotEeStateStamped>("rpwc_recording_EE", 1);
 
 	while(ros::ok())
 	{

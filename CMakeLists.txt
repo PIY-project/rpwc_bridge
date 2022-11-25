@@ -250,9 +250,9 @@ add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
 add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
-# add_executable(onrobot_twofg_bridge_node src/main_onrobot_twofg_bridge.cpp)
-# add_dependencies(onrobot_twofg_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(onrobot_twofg_bridge_node ${catkin_LIBRARIES})
+add_executable(onrobot_twofg_bridge_node src/main_onrobot_twofg_bridge.cpp)
+add_dependencies(onrobot_twofg_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(onrobot_twofg_bridge_node ${catkin_LIBRARIES})
 
 # add_executable(softhand_2_bridge_node src/main_softhand_2_bridge.cpp)
 # add_dependencies(softhand_2_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

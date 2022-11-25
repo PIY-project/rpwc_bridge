@@ -50,12 +50,6 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "softhand_bridge_node");
 	ros::NodeHandle nh;
 
-	// std::string topic_qbhand_command, qbhand_name_joint;
-	// nh.getParam("topic_qbhand_command", topic_qbhand_command);
-	// nh.getParam("qbhand_name_joint", qbhand_name_joint);
-
-	// std::cout<<"qbhand_name_joint"<< qbhand_name_joint<<std::endl;
-
 	send_hand_.joint_names.resize(1);
   	send_hand_.joint_names[0] = "qbhand_synergy_joint";
 
@@ -68,13 +62,6 @@ int main(int argc, char **argv)
     pub_hand_des_ = nh.advertise<trajectory_msgs::JointTrajectory>("qbhand/control/qbhand_synergy_trajectory_controller/command", 1);
     pub_for_recording_ = nh.advertise<rpwc_msgs::RobotEeStateStamped>("rpwc_recording_EE", 1);
 	
-    //pub_CommandHand_test_ = nh.advertise<std_msgs::Float64>("/hand_cmd", 1);
-
-	//Service Server
-  	//ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("rpwc_EE_single_cmd", &callback_rpwc_gripper_single_cmd);
-
-
-
 	while(ros::ok())
 	{
 		
