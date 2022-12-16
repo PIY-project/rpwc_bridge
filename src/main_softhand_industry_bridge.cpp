@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <ros/rate.h>
 #include <rpwc/rpwc_gripper_cmd.h>
+#include <rpwc_msgs/robotEeState.h>
 #include <std_msgs/Float64.h>
 
 
@@ -24,6 +25,13 @@ void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
   	pub_hand_des_.publish(hand_cmd);
 }
 
+bool callback_robot_curr_pose(rpwc_msgs::robotEeState::Request  &req, rpwc_msgs::robotEeState::Response &res)
+{
+	res.data = lastCmdMsg_.data;
+	res.header = lastCmdMsg_.header;
+	return true;
+}
+
 
 //-----------------------------------------------------
 //                                                 main
@@ -33,6 +41,7 @@ int main(int argc, char **argv)
 
 	ros::init(argc, argv, "softhand_bridge_node");
 	ros::NodeHandle nh;
+	lastCmdMsg_.data.data = 0;
 
   	double rate_50Hz = 50.0;
 	ros::Rate r_50HZ(rate_50Hz);
@@ -44,6 +53,7 @@ int main(int argc, char **argv)
 
 	//Service Server
   	ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("rpwc_EE_single_cmd", &callback_rpwc_gripper_single_cmd);
+	ros::ServiceServer server_robot_curr_pose = nh.advertiseService("rpwc_robot_curr_pose", &callback_robot_curr_pose);
 
 
 
