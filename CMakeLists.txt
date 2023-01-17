@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(rpwc_bridge)
 set(CMAKE_BUILD_TYPE Release)
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -250,10 +250,6 @@ add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
 add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
-add_executable(onrobot_twofg_bridge_node src/main_onrobot_twofg_bridge.cpp)
-add_dependencies(onrobot_twofg_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(onrobot_twofg_bridge_node ${catkin_LIBRARIES})
-
 # add_executable(softhand_2_bridge_node src/main_softhand_2_bridge.cpp)
 # add_dependencies(softhand_2_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(softhand_2_bridge_node ${catkin_LIBRARIES})
@@ -286,9 +282,9 @@ add_executable(joy_web_node src/main_joy_web.cpp)
 add_dependencies(joy_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(joy_web_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_executable(abb_bridge_node src/main_abb_bridge.cpp src/abb_bridge.cpp )
-add_dependencies(abb_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(abb_bridge_node ${catkin_LIBRARIES})
+#add_executable(abb_bridge_node src/main_abb_bridge.cpp src/abb_bridge.cpp )
+#add_dependencies(abb_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(abb_bridge_node ${catkin_LIBRARIES})
 
 add_executable(request_from_web_node src/main_request_from_web.cpp src/request_from_web.cpp)
 add_dependencies(request_from_web_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
