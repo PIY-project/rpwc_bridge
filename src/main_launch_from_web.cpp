@@ -64,7 +64,7 @@ bool callback_hw_launch(rpwc_bridge::setup_hardware::Request  &req, rpwc_bridge:
     bool active = req.active.data;
     std::cout << "bool active: "<< active <<std::endl;
 
-    bool is_running;
+    bool is_running = false;
     int process_index;
     std::string name;
     name = req.brand.data + req.model.data + req.ip.data;

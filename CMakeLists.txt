@@ -246,9 +246,9 @@ target_link_libraries(lidar_2D_bridge_node ${catkin_LIBRARIES})
 # add_dependencies(franka_gripper_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(franka_gripper_bridge_node ${catkin_LIBRARIES})
 
-# add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
-# add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
+add_executable(softhand_bridge_node src/main_softhand_bridge.cpp)
+add_dependencies(softhand_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 
 # add_executable(softhand_2_bridge_node src/main_softhand_2_bridge.cpp)
 # add_dependencies(softhand_2_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

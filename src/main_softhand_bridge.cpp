@@ -12,40 +12,41 @@ trajectory_msgs::JointTrajectory send_hand_;
 ros::Publisher pub_for_recording_, pub_hand_des_, pub_CommandHand_test_;
 rpwc_msgs::RobotEeStateStamped lastCmdMsg_;
 
-// bool callback_rpwc_gripper_single_cmd(rpwc::rpwc_gripper_cmd::Request  &req, rpwc::rpwc_gripper_cmd::Response &res)
-// {
-// 	send_hand_.points.clear();
-//   	send_hand_.points.resize(1);
-//   	send_hand_.points[0].positions.push_back(req.EE_cmd_.data);
-//   	send_hand_.points[0].time_from_start = ros::Duration(0.3);
-//   	pub_hand_des_.publish(send_hand_);
-
-// 	return true;
-// }
-
-void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
+void callback_rpwc_gripper_cmd(const rpwc_msgs::RobotEeStateStamped::ConstPtr& msg)
 {
-	//HAND CLOSURE
-  	send_hand_.points.clear();
+	double position = msg->position.data;
+	if(msg->position.data < 0.0)position = 0.0;
+	else if (msg->position.data > 1.0) position = 1.0;
+
+	double velocity = 1;
+	double force = 1;
+	/*double velocity = msg->velocity.data;
+	if(msg->velocity.data < 0.125)velocity = 0.125;
+	else if (msg->velocity.data > 1.0) velocity = 1.0;
+
+	double force = msg->force.data;
+	if(msg->force.data < 0.625)force = 0.625;
+	else if (msg->force.data > 1.0) force = 1.0;*/
+
+	send_hand_.points.clear();
   	send_hand_.points.resize(1);
-  	send_hand_.points[0].positions.push_back(msg->data);
+  	send_hand_.points[0].positions.push_back(position);
   	send_hand_.points[0].time_from_start = ros::Duration(0.3);
-  	pub_hand_des_.publish(send_hand_);
 
 	
-	lastCmdMsg_.data.data = msg->data;
+	lastCmdMsg_.position.data = position;
+	lastCmdMsg_.velocity.data = velocity;
+	lastCmdMsg_.force.data = force;
 	lastCmdMsg_.header.stamp = ros::Time::now();
-	pub_for_recording_.publish(lastCmdMsg_);
 
-  	// std_msgs::Float64 hand_test;
-  	// hand_test.data = msg->data;
-  	//pub_CommandHand_test_.publish(hand_test);
+	pub_hand_des_.publish(send_hand_);
+	pub_for_recording_.publish(lastCmdMsg_);
 }
 
 bool callback_robot_curr_pose(rpwc_msgs::robotEeState::Request  &req, rpwc_msgs::robotEeState::Response &res)
 {
-	res.data = lastCmdMsg_.data;
-	res.header = lastCmdMsg_.header;
+	lastCmdMsg_.header.stamp = ros::Time::now();
+	res.state = lastCmdMsg_;
 	return true;
 }
 
@@ -60,10 +61,13 @@ int main(int argc, char **argv)
 
 	send_hand_.joint_names.resize(1);
   	send_hand_.joint_names[0] = "qbhand_synergy_joint";
-	lastCmdMsg_.data.data = 0;
+	lastCmdMsg_.position.data = 0;
+	lastCmdMsg_.velocity.data = 0.125;
+	lastCmdMsg_.force.data = 0.625;
+	lastCmdMsg_.header.stamp = ros::Time::now();
 
-  	double rate_50Hz = 50.0;
-	ros::Rate r_50HZ(rate_50Hz);
+  	double rate_10Hz = 10.0;
+	ros::Rate r_10HZ(rate_10Hz);
 
 	//Subscriber
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
@@ -77,7 +81,7 @@ int main(int argc, char **argv)
 	{
 		
 		ros::spinOnce();
-		r_50HZ.sleep();
+		r_10HZ.sleep();
 	}// end while()
 	return 0;
 }
