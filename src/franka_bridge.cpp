@@ -4,8 +4,12 @@ franka_bridge::franka_bridge()
 {
 	//Subscriber
 	sub_curr_pos_ = n_.subscribe("franka_ee_pose", 1, &franka_bridge::callback_curr_pose, this);
+	
+
 	// sub_curr_pos_ = n_.subscribe("franka_state_controller/franka_states", 1, &franka_bridge::callback_curr_pose, this);
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
+	
+	
 	//Publisher
     pub_pos_des_ = n_.advertise<geometry_msgs::Pose>("pose_des", 1);
     pub_curr_pos_ = n_.advertise<geometry_msgs::PoseStamped>("rpwc_robot_curr_pose", 1);

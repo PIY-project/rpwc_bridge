@@ -31,7 +31,7 @@ void callback_rpwc_gripper_cmd(const std_msgs::Float64::ConstPtr& msg)
   	pub_hand_des_.publish(send_hand_);
 
 	rpwc_msgs::RobotEeStateStamped tmpMsg;
-	tmpMsg.data.data = msg->data;
+	tmpMsg.position.data = msg->data;
 	tmpMsg.header.stamp = ros::Time::now();
 	pub_for_recording_.publish(tmpMsg);
 
