@@ -3,7 +3,7 @@
 summit_xls_steel_cl_bridge::summit_xls_steel_cl_bridge()
 {
 	//Subscriber
-	sub_curr_pos_ = n_.subscribe("robot/robotnik_base_control/pose", 1, &summit_xls_steel_cl_bridge::callback_curr_pose, this);
+	odom_sub_ = n_.subscribe("/robot/robotnik_base_control/odom", 1, &summit_xls_steel_cl_bridge::odom_callback, this);
 	sub_rpwc_control_poses_ = n_.subscribe("rpwc_pose_des", 1, &summit_xls_steel_cl_bridge::callback_rpwc_control_poses, this);
 	
 	//Publisher
@@ -19,14 +19,21 @@ summit_xls_steel_cl_bridge::~summit_xls_steel_cl_bridge()
 
 }
 
-
-void summit_xls_steel_cl_bridge::callback_curr_pose(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void summit_xls_steel_cl_bridge::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
-	pose_curr = *msg;
- 	pose_curr.header.stamp = ros::Time::now();
- 	pub_curr_pos_.publish(pose_curr);
-	
+  pose_curr.pose = msg->pose.pose;
+  pose_curr.header = msg->header;
+  pose_curr.header.stamp = ros::Time::now();
+  pub_curr_pos_.publish(pose_curr);
 }
+
+// void summit_xls_steel_cl_bridge::callback_curr_pose(const geometry_msgs::PoseStamped::ConstPtr& msg)
+// {
+// 	pose_curr = *msg;
+//  	pose_curr.header.stamp = ros::Time::now();
+//  	pub_curr_pos_.publish(pose_curr);
+	
+// }
 
 void summit_xls_steel_cl_bridge::callback_rpwc_control_poses(const rpwc_msgs::RobotMobileBaseControl::ConstPtr& msg)
 {

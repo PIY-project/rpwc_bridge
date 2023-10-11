@@ -297,3 +297,7 @@ target_link_libraries(request_from_web_node ${catkin_LIBRARIES} yaml-cpp)
 # add_executable(zivid_bridge_node src/main_zivid_bridge.cpp src/zivid_bridge.cpp )
 # add_dependencies(zivid_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(zivid_bridge_node ${catkin_LIBRARIES})
+
+catkin_install_python(PROGRAMS scripts/summit_xls_steel_bridge_python.py scripts/lidar_2D_bridge_python.py
+ DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
