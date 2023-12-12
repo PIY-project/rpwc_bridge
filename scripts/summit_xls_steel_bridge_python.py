@@ -86,16 +86,42 @@ class CustomNode:
     
     
     def callback_rpwc_joy(self, data):
+
+        if data.linear.y > 0.3 or data.linear.y < -0.3:
+            if data.linear.y > 0.3:
+                data.linear.y = data.linear.y - 0.3
+            else:
+                data.linear.y = data.linear.y + 0.3
+        else: 
+            data.linear.y = 0
+
+        if data.linear.x > 0.3 or data.linear.x < -0.3:
+            if data.linear.x > 0.3:
+                data.linear.x = data.linear.x - 0.3
+            else:
+                data.linear.x = data.linear.x + 0.3
+        else: 
+            data.linear.x = 0
+
+        if data.angular.z > 0.3 or data.angular.z < -0.3:
+            if data.angular.z > 0.3:
+                data.angular.z = data.angular.z - 0.3
+            else:
+                data.angular.z = data.angular.z + 0.3
+        else: 
+            data.angular.z = 0
+
+
         joy_cmd = {
                 "linear": {
                     "x": data.linear.y,
-                    "y": data.linear.x,
+                    "y": - data.linear.x,
                     "z": 0.0,
                 },
                 "angular": {
                     "x": 0.0,
                     "y": 0.0,
-                    "z": data.angular.z,
+                    "z": - data.angular.z,
                 }
             }
         self.pub_joy_cmd_vel.publish(joy_cmd)
