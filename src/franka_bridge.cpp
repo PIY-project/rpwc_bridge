@@ -4,6 +4,7 @@ franka_bridge::franka_bridge()
 {
 	//Subscriber
 	sub_curr_pos_ = n_.subscribe("cartesian_impedance_controller_softbots_stiff_matrix/franka_ee_pose", 1, &franka_bridge::callback_curr_pose, this);
+	sub_curr_pos_gravity_ = n_.subscribe("gravity_comp/franka_ee_pose", 1, &franka_bridge::callback_curr_pose_gravity, this);
 	sub_equi_pos_ = n_.subscribe("cartesian_impedance_controller_softbots_stiff_matrix/equilibrium_pose", 1, &franka_bridge::callback_equi_pose, this);
 
 	sub_rpwc_pose_des_ = n_.subscribe("rpwc_pose_des", 1, &franka_bridge::callback_rpwc_pose_des, this);
@@ -20,7 +21,7 @@ franka_bridge::franka_bridge()
 
 	old_controller_name_ = "cartesian_impedance_controller_softbots_stiff_matrix";
 
-	first_quat_base_EE_ = first_rec_ = true;
+	first_quat_base_EE_ = first_rec_ = first_quat_base_EE_gravity_ = true;
 }
 
 franka_bridge::~franka_bridge()
@@ -56,6 +57,35 @@ void franka_bridge::callback_curr_pose(const geometry_msgs::PoseStamped::ConstPt
 	msg_pose_.pose.position.z = msg->pose.position.z;
 	msg_pose_.header.stamp = ros::Time::now();
 	pub_curr_pos_.publish(msg_pose_);
+}
+
+void franka_bridge::callback_curr_pose_gravity(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+	quat_base2EE_gravity_.vec() << msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z;
+	quat_base2EE_gravity_.w() = msg->pose.orientation.w;
+	// rotation to quaternion issue , "Sign Flip" , check  http://www.dtic.mil/dtic/tr/fulltext/u2/1043624.pdf
+	if(first_quat_base_EE_gravity_)
+	{
+		first_quat_base_EE_gravity_= false;
+		quat_base2EE_gravity_old_ = quat_base2EE_gravity_;
+	} 
+
+	double sign_check = quat_base2EE_gravity_.w() * quat_base2EE_gravity_old_.w() + quat_base2EE_gravity_.x() * quat_base2EE_gravity_old_.x() + quat_base2EE_gravity_.y() * quat_base2EE_gravity_old_.y() + quat_base2EE_gravity_.z() * quat_base2EE_gravity_old_.z();
+	if(sign_check < 0.0)
+	{
+		quat_base2EE_gravity_.w() = quat_base2EE_gravity_.w() * (-1); 
+		quat_base2EE_gravity_.vec() = quat_base2EE_gravity_.vec() * (-1); 
+	}
+	quat_base2EE_gravity_old_ = quat_base2EE_gravity_;
+
+	msg_pose_gravity_.pose.orientation.w = quat_base2EE_gravity_.w();
+	msg_pose_gravity_.pose.orientation.x = quat_base2EE_gravity_.x();
+	msg_pose_gravity_.pose.orientation.y = quat_base2EE_gravity_.y();
+	msg_pose_gravity_.pose.orientation.z = quat_base2EE_gravity_.z();
+	msg_pose_gravity_.pose.position.x = msg->pose.position.x;
+	msg_pose_gravity_.pose.position.y = msg->pose.position.y;
+	msg_pose_gravity_.pose.position.z = msg->pose.position.z;
+	msg_pose_gravity_.header.stamp = ros::Time::now();
 }
 
 void franka_bridge::callback_equi_pose(const geometry_msgs::PoseStamped::ConstPtr& msg)
@@ -104,7 +134,9 @@ void franka_bridge::callback_rpwc_pose_des(const geometry_msgs::PoseStamped::Con
 bool franka_bridge::callback_robot_curr_pose(rpwc_msgs::robotArmState::Request  &req, rpwc_msgs::robotArmState::Response &res)
 {
 	msg_pose_.header.stamp = ros::Time::now();
-	res.pose = msg_pose_;
+	if(old_controller_name_.compare("cartesian_impedance_controller_softbots_stiff_matrix") == 0) res.pose = msg_pose_;
+	else res.pose = msg_pose_gravity_;
+	
 	return true;
 }
 

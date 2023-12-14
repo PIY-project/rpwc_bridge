@@ -6,6 +6,7 @@
 #include <rpwc_msgs/robotEeState.h>
 #include <std_msgs/Float64.h>
 #include <trajectory_msgs/JointTrajectory.h>
+#include <std_msgs/Float64.h>
 
 
 trajectory_msgs::JointTrajectory send_hand_;
@@ -18,8 +19,7 @@ void callback_rpwc_gripper_cmd(const rpwc_msgs::RobotEeStateStamped::ConstPtr& m
 	if(msg->position.data < 0.0)position = 0.0;
 	else if (msg->position.data > 1.0) position = 1.0;
 
-	double velocity = 1;
-	double force = 1;
+	
 	/*double velocity = msg->velocity.data;
 	if(msg->velocity.data < 0.125)velocity = 0.125;
 	else if (msg->velocity.data > 1.0) velocity = 1.0;
@@ -34,14 +34,37 @@ void callback_rpwc_gripper_cmd(const rpwc_msgs::RobotEeStateStamped::ConstPtr& m
   	send_hand_.points[0].time_from_start = ros::Duration(0.3);
 
 	
-	lastCmdMsg_.position.data = position;
+	
+
+	pub_hand_des_.publish(send_hand_);
+	//pub_for_recording_.publish(lastCmdMsg_);
+}
+
+void callback_cmd(const std_msgs::Float64::ConstPtr& msg)
+{
+	// if(msg->points.size() > 0 && msg->points[0].positions.size() > 0)
+	// {
+	// 	double velocity = 1;
+	// 	double force = 1;
+	// 	lastCmdMsg_.position.data = msg->points[0].positions[0];
+	// 	lastCmdMsg_.velocity.data = velocity;
+	// 	lastCmdMsg_.force.data = force;
+	// 	lastCmdMsg_.header.stamp = ros::Time::now();
+		
+	// 	pub_for_recording_.publish(lastCmdMsg_);
+	// }
+	double velocity = 1;
+	double force = 1;
+	lastCmdMsg_.position.data = msg->data;
 	lastCmdMsg_.velocity.data = velocity;
 	lastCmdMsg_.force.data = force;
 	lastCmdMsg_.header.stamp = ros::Time::now();
-
-	pub_hand_des_.publish(send_hand_);
+	
 	pub_for_recording_.publish(lastCmdMsg_);
+	
 }
+
+
 
 bool callback_robot_curr_pose(rpwc_msgs::robotEeState::Request  &req, rpwc_msgs::robotEeState::Response &res)
 {
@@ -66,13 +89,15 @@ int main(int argc, char **argv)
 	lastCmdMsg_.force.data = 0.625;
 	lastCmdMsg_.header.stamp = ros::Time::now();
 
-  	double rate_10Hz = 10.0;
-	ros::Rate r_10HZ(rate_10Hz);
+  	double rate_100Hz = 100.0;
+	ros::Rate r_100HZ(rate_100Hz);
 
 	//Subscriber
 	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
+	// ros::Subscriber sub_cmd = nh.subscribe("control/qbhand_synergy_trajectory_controller/command", 1, &callback_cmd);
+	ros::Subscriber sub_cmd = nh.subscribe("hand_closure", 1, &callback_cmd);
   	//Publisher
-    pub_hand_des_ = nh.advertise<trajectory_msgs::JointTrajectory>("qbhand/control/qbhand_synergy_trajectory_controller/command", 1);
+    pub_hand_des_ = nh.advertise<trajectory_msgs::JointTrajectory>("control/qbhand_synergy_trajectory_controller/command", 1);
     pub_for_recording_ = nh.advertise<rpwc_msgs::RobotEeStateStamped>("rpwc_recording_EE", 1);
 	//Service Server
   	ros::ServiceServer server_robot_curr_pose = nh.advertiseService("rpwc_robot_curr_pose", &callback_robot_curr_pose);
@@ -81,7 +106,7 @@ int main(int argc, char **argv)
 	{
 		
 		ros::spinOnce();
-		r_10HZ.sleep();
+		r_100HZ.sleep();
 	}// end while()
 	return 0;
 }
