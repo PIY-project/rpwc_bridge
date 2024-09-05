@@ -53,7 +53,7 @@ class CustomNode:
     def playFromWeb(self, req):
         
         request = roslibpy.ServiceRequest({
-            'state' : { 'data': req.state.data},
+            'state' : { 'data': 1},
             'TasksExec':[
                 {
                     'mode': {'data': 1},
