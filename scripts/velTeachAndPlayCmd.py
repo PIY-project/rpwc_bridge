@@ -54,12 +54,12 @@ class CustomNode:
     def playFromWeb(self, req):
         
         request = roslibpy.ServiceRequest({
-            'state' : { 'data': 1},
+            'state' : { 'data': 0},
             'TasksExec':[
                 {
                     'mode': {'data': 1},
                     'sequenceExecutionType': {'data': 1},
-                    'TasksID': ['avvicinamento'],
+                    'TasksID': [{'data': 'avvicinamento'}],
                     'taskInLoop': {'data': False}
                 }
             ]
@@ -68,7 +68,7 @@ class CustomNode:
         # # Chiama il servizio e attendi la risposta
         response = self.playCmd.call(request)
         #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return stateRecResponse(self.response)
+        return stateExecResponse(self.response)
     
     def callback_rpwc_joy(self, data):
 

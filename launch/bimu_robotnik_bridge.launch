@@ -5,6 +5,6 @@
 	
     <group ns="$(arg hw_namespace)">
 		<param name="ip_robot" 	 value="$(arg hw_ip)" />
-		<node pkg="rpwc_bridge" name="velAndTeachCmd" type="velAndTeachCmd.py" output="screen" required="True"/>
+		<node pkg="rpwc_bridge" name="velTeachAndPlayCmd" type="velTeachAndPlayCmd.py" output="screen" required="True"/>
 	</group> 
 </launch>
