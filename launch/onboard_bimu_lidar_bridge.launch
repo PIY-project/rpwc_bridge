@@ -1,0 +1,15 @@
+<launch>
+
+	<arg name="hw_namespace" default="setup1/myLidar"/>
+	<arg name="setup_namespace" default="/setup1"/>
+	<arg name="serial_number" default=".." doc="sensor SN address"/>
+	<arg name="hw_ip" default="...." doc="sensor IP address"/>
+
+	
+    <group ns="$(arg hw_namespace)">
+		<!-- <node pkg="rpwc_bridge" name="lidar_2D_bridge_node" type="lidar_2D_bridge_node" output="screen" required="True"/> -->
+		<!-- <param name="ip_robot" 	 value="$(arg hw_ip)" /> -->
+		<node pkg="rpwc_bridge" name="onboard_lidar_2D_bridge_python" type="onboard_lidar_2D_bridge_python.py" output="screen" required="True"/>
+	</group> 
+
+</launch>

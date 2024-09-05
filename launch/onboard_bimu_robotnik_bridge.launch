@@ -1,0 +1,12 @@
+<launch>
+    <arg name="hw_namespace" default="setup1/myBaseMobile"/>
+    <arg name="setup_namespace" default="setup1/"/>
+	<arg name="hw_ip" default="192.168.131.88" doc="sensor IP address"/>
+
+
+	 <group ns="$(arg hw_namespace)">
+		<param name="ip_robot" 	 value="$(arg hw_ip)" />
+		<node pkg="rpwc_bridge" name="onboard_summit_xls_steel_bridge_python" type="onboard_summit_xls_steel_bridge_python.py" output="screen" required="True"/>
+	</group> 
+
+</launch>
