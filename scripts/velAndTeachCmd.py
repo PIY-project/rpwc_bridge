@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 from rpwc_msgs.msg import RobotMobileBaseControl
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
-from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse
+from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse, stateExec, stateExecResponse
 from geometry_msgs.msg import PoseStamped
 
 
@@ -27,6 +27,7 @@ class CustomNode:
         self.client.run()
         self.pub_joy_cmd_vel = roslibpy.Topic(self.client, '/robot/pad_teleop/cmd_vel', 'geometry_msgs/Twist')
         self.teachCmd = roslibpy.Service(self.client, '/setup1/state_rec', 'rpwc_msgs/stateRec')
+        self.playCmd = roslibpy.Service(self.client, '/setup1/state_exec', 'rpwc_msgs/stateExec')
 
         self.response = Bool()
         self.response.data = True
@@ -44,11 +45,29 @@ class CustomNode:
             'state':{ 'data': req.state.data}
         })
 
-        # Chiama il servizio e attendi la risposta
+        # # Chiama il servizio e attendi la risposta
         response = self.teachCmd.call(request)
         #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
         return stateRecResponse(self.response)
     
+    def playFromWeb(self, req):
+        
+        request = roslibpy.ServiceRequest({
+            'state' : { 'data': req.state.data},
+            'TasksExec':[
+                {
+                    'mode': {'data': 1},
+                    'sequenceExecutionType': {'data': 1},
+                    'TasksID': ['avvicinamento'],
+                    'taskInLoop': {'data': False}
+                }
+            ]
+        })
+
+        # # Chiama il servizio e attendi la risposta
+        response = self.playCmd.call(request)
+        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
+        return stateRecResponse(self.response)
     
     def callback_rpwc_joy(self, data):
 

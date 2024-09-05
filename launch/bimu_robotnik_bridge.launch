@@ -1,5 +1,5 @@
 <launch>
-    <arg name="hw_namespace" default="setup1/cicccio"/>
+    <arg name="hw_namespace" default="setup1/myBaseMobile"/>
 	<arg name="hw_ip" default="192.168.131.88" doc="sensor IP address"/>
 
 	
