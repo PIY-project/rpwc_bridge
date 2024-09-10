@@ -21,14 +21,13 @@ class CustomNode:
         rospy.wait_for_service(setup_namespace + '/set_hardware_activation')
         set_hardware_activation_service = rospy.ServiceProxy(setup_namespace + '/set_hardware_activation', setHardwareActivation)
         
-################
         #Servizio creato dal braccio robotico in rpwc sul nuc 
         rospy.wait_for_service(setup_namespace + '/set_arm_start_task')
         start_arm_task = rospy.ServiceProxy(setup_namespace + '/set_arm_start_task', Empty)
 
         #Servizio che legge su rpwc onboard della base mobile 
         self.server_launch_arm_task_ = rospy.Service(setup_namespace +"/rpwc_arm_task", Empty, self.callback_launch_arm_task)
-#################################
+
         # Prepara il messaggio di richiesta
         req = setHardwareActivationRequest()
         req.hardwareID.data = 'myBaseMobile'
