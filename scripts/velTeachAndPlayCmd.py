@@ -23,6 +23,12 @@ class CustomNode:
         self.serverTeachFromWeb = rospy.Service('/bimuTeachFromWeb', stateRec, self.teachFromWeb)
         self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb', stateExec, self.playFromWeb)
         
+        rospy.wait_for_service('/setup1/set_arm_start_task')
+        self.clientStartArmTask = rospy.ServiceProxy('/setup1/set_arm_start_task', Empty)
+        
+        
+
+
         self.serverPlayMobileBaseTask = rospy.Service('/setup1/rpwc_mobile_base_task', Empty, self.playFromArm)
 
         #rosbridge
@@ -31,10 +37,19 @@ class CustomNode:
         self.pub_joy_cmd_vel = roslibpy.Topic(self.client, '/robot/pad_teleop/cmd_vel', 'geometry_msgs/Twist')
         self.teachCmd = roslibpy.Service(self.client, '/setup1/state_rec', 'rpwc_msgs/stateRec')
         self.playCmd = roslibpy.Service(self.client, '/setup1/state_exec', 'rpwc_msgs/stateExec')
+
+        self.startTaskFromBase = roslibpy.Service(self.client, '/setup1/rpwc_arm_task', 'std_srvs/Empty')
+        self.startTaskFromBase.advertise(self.handleStartTaskFromBase)
         
 
         self.response = Bool()
         self.response.data = True
+
+
+    def handleStartTaskFromBase(self, request, response):
+        print(f'Richiesta ricevuta to start Arm task: {request}')
+        response = self.clientStartArmTask()
+        return True
 
 
     def playFromArm(self, req):
@@ -50,7 +65,7 @@ class CustomNode:
             ]
         })
         response = self.playCmd.call(request)
-        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
+        rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
         return EmptyRequest(self.response)    
         
         
