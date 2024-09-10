@@ -59,7 +59,7 @@ class CustomNode:
                 {
                     'mode': {'data': 1},
                     'sequenceExecutionType': {'data': 1},
-                    'TasksID': [{'data': 'avvicinamento'}],
+-                    'TasksID': [{'data': 'avvicinamento'}],
                     'taskInLoop': {'data': False}
                 }
             ]

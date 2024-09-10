@@ -3,6 +3,7 @@
 import rospy
 from rpwc_msgs.msg import RobotMobileBaseControl
 from geometry_msgs.msg import Twist
+from std_srvs.srv import Empty, EmptyRequest
 from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, setHardwareActivation, setHardwareActivationRequest, setHardwareActivationResponse
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
@@ -15,14 +16,23 @@ class CustomNode:
         self.namespace = rospy.get_namespace()
         setup_namespace = rospy.get_param('setup_namespace','/setup1')
         rospy.loginfo("namespace: %s", self.namespace)
+        rospy.loginfo("setup_namespace: %s", setup_namespace)
  
         rospy.wait_for_service(setup_namespace + '/set_hardware_activation')
         set_hardware_activation_service = rospy.ServiceProxy(setup_namespace + '/set_hardware_activation', setHardwareActivation)
-# Prepara il messaggio di richiesta
+
+        #Servizio creato dal braccio robotico in rpwc sul nuc 
+        rospy.wait_for_service(setup_namespace + '/set_arm_start_task')
+        start_arm_task = rospy.ServiceProxy(setup_namespace + '/set_arm_start_task', Empty)
+
+        #Servizio che legge su rpwc onboard della base mobile 
+        self.server_launch_arm_task_ = rospy.Service(setup_namespace +"/rpwc_arm_task", Empty, self.callback_launch_arm_task)
+
+        # Prepara il messaggio di richiesta
         req = setHardwareActivationRequest()
         req.hardwareID.data = 'myBaseMobile'
         req.activation.data = True
- # Chiamata al servizio
+        # Chiamata al servizio
         res = set_hardware_activation_service(req)
 
             # Stampa il risultato
@@ -33,7 +43,9 @@ class CustomNode:
 
 
         self.server_robot_curr_pose_ = rospy.Service(self.namespace +"rpwc_robot_curr_pose", robotMobileBaseState, self.callback_robot_curr_pose)
+     
         self.sub_rpwc_control_poses = rospy.Subscriber(self.namespace + 'rpwc_pose_des', RobotMobileBaseControl, self.callback_rpwc_control_poses)
+
 
         self.pub_curr_pos_ = rospy.Publisher(self.namespace +"rpwc_robot_curr_pose", PoseStamped, queue_size=1)
         self.pose_des = RobotMobileBaseControl()
@@ -44,7 +56,16 @@ class CustomNode:
         self.pub_poses_control = rospy.Publisher(self.namespace + 'poses_control', RobotMobileBaseControl, queue_size=1)
         self.sub_odom = rospy.Subscriber('/robot/robotnik_base_control/odom', Odometry, self.odom_callback)
 
-    
+    def callback_launch_arm_task(self,req):
+        #invia empy msg
+        # Prepara il messaggio di richiesta
+        req = EmptyRequest()
+        # Chiamata al servizio
+        res = start_arm_task(req)
+        rospy.loginfo("Call start_arm_task")
+
+
+
     def callback_robot_curr_pose(self, req):
         robot_curr_pose = self.pose_curr
         robot_curr_pose.header.stamp = rospy.Time.now()
