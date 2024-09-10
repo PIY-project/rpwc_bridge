@@ -4,6 +4,7 @@ import rospy
 from rpwc_msgs.msg import RobotMobileBaseControl
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
+from std_srvs.srv import Empty, EmptyRequest
 from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse, stateExec, stateExecResponse
 from geometry_msgs.msg import PoseStamped
 
@@ -22,6 +23,7 @@ class CustomNode:
         self.serverTeachFromWeb = rospy.Service('/bimuTeachFromWeb', stateRec, self.teachFromWeb)
         self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb', stateExec, self.playFromWeb)
         
+        self.serverPlayMobileBaseTask = rospy.Service('/setup1/rpwc_mobile_base_task', Empty, self.playFromArm)
 
         #rosbridge
         self.client = roslibpy.Ros(host='192.168.131.88', port=9090)
@@ -29,13 +31,27 @@ class CustomNode:
         self.pub_joy_cmd_vel = roslibpy.Topic(self.client, '/robot/pad_teleop/cmd_vel', 'geometry_msgs/Twist')
         self.teachCmd = roslibpy.Service(self.client, '/setup1/state_rec', 'rpwc_msgs/stateRec')
         self.playCmd = roslibpy.Service(self.client, '/setup1/state_exec', 'rpwc_msgs/stateExec')
+        
 
         self.response = Bool()
         self.response.data = True
 
-        # # Definisci il client del servizio
 
-       
+    def playFromArm(self, req):
+        request = roslibpy.ServiceRequest({
+            'state' : { 'data': 0},
+            'TasksExec':[
+                {
+                    'mode': {'data': 1},
+                    'sequenceExecutionType': {'data': 1},
+-                    'TasksID': [{'data': 'allontanamento'}],
+                    'taskInLoop': {'data': False}
+                }
+            ]
+        })
+        response = self.playCmd.call(request)
+        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
+        return EmptyRequest(self.response)    
         
         
         

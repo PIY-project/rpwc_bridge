@@ -8,7 +8,7 @@ from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, se
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 
-
+import roslibpy
 
 class CustomNode:
     def __init__(self):
@@ -21,11 +21,12 @@ class CustomNode:
         rospy.wait_for_service(setup_namespace + '/set_hardware_activation')
         set_hardware_activation_service = rospy.ServiceProxy(setup_namespace + '/set_hardware_activation', setHardwareActivation)
         
-        #Servizio creato dal braccio robotico in rpwc sul nuc 
-        rospy.wait_for_service(setup_namespace + '/set_arm_start_task')
-        start_arm_task = rospy.ServiceProxy(setup_namespace + '/set_arm_start_task', Empty)
+        #Servizio per lanciare in play il braccio
+        self.client = roslibpy.Ros(host='192.168.131.22', port=9090)
+        self.client.run()
+        self.start_arm_task = roslibpy.Service(self.client, setup_namespace + '/set_arm_start_task', 'std_msgs/Empty')
 
-        #Servizio che legge su rpwc onboard della base mobile 
+        #Servizio che legge su rpwc onboard della base mobile e manda un rolibpy per play braccio
         self.server_launch_arm_task_ = rospy.Service(setup_namespace +"/rpwc_arm_task", Empty, self.callback_launch_arm_task)
 
         # Prepara il messaggio di richiesta
@@ -59,10 +60,13 @@ class CustomNode:
     def callback_launch_arm_task(self,req):
         #invia empy msg
         # Prepara il messaggio di richiesta
-        req = EmptyRequest()
-        # Chiamata al servizio
-        res = start_arm_task(req)
-        rospy.loginfo("Call start_arm_task")
+        #ANORMALE CON ROSLIBPY
+        request = roslibpy.ServiceRequest({
+            
+        })
+         # # Chiama il servizio e attendi la risposta
+        response = self.start_arm_task.call(request)
+        return EmptyRequest(self.response)
 
 
 
