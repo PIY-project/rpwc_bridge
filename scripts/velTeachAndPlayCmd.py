@@ -4,7 +4,7 @@ import rospy
 from rpwc_msgs.msg import RobotMobileBaseControl
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty, EmptyRequest
+from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
 from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse, stateExec, stateExecResponse
 from geometry_msgs.msg import PoseStamped
 
@@ -22,8 +22,6 @@ class CustomNode:
         self.sub_rpwc_joy = rospy.Subscriber(self.namespace + 'joy_web', Twist, self.callback_rpwc_joy)
         self.serverTeachFromWeb = rospy.Service('/bimuTeachFromWeb', stateRec, self.teachFromWeb)
         self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb', stateExec, self.playFromWeb)
-        
-        rospy.wait_for_service('/setup1/set_arm_start_task')
         self.clientStartArmTask = rospy.ServiceProxy('/setup1/set_arm_start_task', Empty)
         
         
@@ -35,6 +33,8 @@ class CustomNode:
         self.client = roslibpy.Ros(host='192.168.131.88', port=9090)
         self.client.run()
         self.pub_joy_cmd_vel = roslibpy.Topic(self.client, '/robot/pad_teleop/cmd_vel', 'geometry_msgs/Twist')
+        self.pub_joy_cmd_vel.advertise()
+        
         self.teachCmd = roslibpy.Service(self.client, '/setup1/state_rec', 'rpwc_msgs/stateRec')
         self.playCmd = roslibpy.Service(self.client, '/setup1/state_exec', 'rpwc_msgs/stateExec')
 
@@ -48,7 +48,7 @@ class CustomNode:
 
     def handleStartTaskFromBase(self, request, response):
         print(f'Richiesta ricevuta to start Arm task: {request}')
-        response = self.clientStartArmTask()
+        self.clientStartArmTask()
         return True
 
 
@@ -59,14 +59,14 @@ class CustomNode:
                 {
                     'mode': {'data': 1},
                     'sequenceExecutionType': {'data': 1},
--                    'TasksID': [{'data': 'allontanamento'}],
+                    'TasksID': [{'data': 'allontanamento'}],
                     'taskInLoop': {'data': False}
                 }
             ]
         })
-        response = self.playCmd.call(request)
-        rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return EmptyRequest(self.response)    
+        self.playCmd.call(request)
+        #print(f'Richiesta ricevuta to start Mobile task: {request}')
+        return EmptyResponse() 
         
         
         
@@ -90,7 +90,7 @@ class CustomNode:
                 {
                     'mode': {'data': 1},
                     'sequenceExecutionType': {'data': 1},
--                    'TasksID': [{'data': 'avvicinamento'}],
+                    'TasksID': [{'data': 'avvicinamento'}],
                     'taskInLoop': {'data': False}
                 }
             ]
