@@ -5,7 +5,7 @@ from rpwc_msgs.msg import RobotMobileBaseControl
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
-from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse, stateExec, stateExecResponse
+from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, stateRec, stateRecResponse, stateExec, stateExecResponse, taskPoc, taskPocRequest, taskPocResponse
 from geometry_msgs.msg import PoseStamped
 
 
@@ -19,15 +19,16 @@ class CustomNode:
         self.namespace = rospy.get_namespace()
         rospy.loginfo("namespace: %s", self.namespace)
 
+
         self.sub_rpwc_joy = rospy.Subscriber(self.namespace + 'joy_web', Twist, self.callback_rpwc_joy)
         self.serverTeachFromWeb = rospy.Service('/bimuTeachFromWeb', stateRec, self.teachFromWeb)
         self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb', stateExec, self.playFromWeb)
-        self.clientStartArmTask = rospy.ServiceProxy('/setup1/set_arm_start_task', Empty)
+        self.clientStartArmTask = rospy.ServiceProxy('/setup1/set_arm_start_task', taskPoc)
         
         
 
 
-        self.serverPlayMobileBaseTask = rospy.Service('/setup1/rpwc_mobile_base_task', Empty, self.playFromArm)
+        self.serverPlayMobileBaseTask = rospy.Service('/setup1/rpwc_mobile_base_task', taskPoc, self.playFromArm)
 
         #rosbridge
         self.client = roslibpy.Ros(host='192.168.131.88', port=9090)
@@ -38,7 +39,7 @@ class CustomNode:
         self.teachCmd = roslibpy.Service(self.client, '/setup1/state_rec', 'rpwc_msgs/stateRec')
         self.playCmd = roslibpy.Service(self.client, '/setup1/state_exec', 'rpwc_msgs/stateExec')
 
-        self.startTaskFromBase = roslibpy.Service(self.client, '/setup1/rpwc_arm_task', 'std_srvs/Empty')
+        self.startTaskFromBase = roslibpy.Service(self.client, '/setup1/rpwc_arm_task', 'rpwc_msgs/taskPoc')
         self.startTaskFromBase.advertise(self.handleStartTaskFromBase)
         
 
@@ -46,9 +47,35 @@ class CustomNode:
         self.response.data = True
 
 
-    def handleStartTaskFromBase(self, request, response):
+    def handleStartTaskFromBase(self, request, response1):
         print(f'Richiesta ricevuta to start Arm task: {request}')
-        self.clientStartArmTask()
+        name = request['task']['data']
+        print(f'Name: {name}')
+        # try:
+        #     # # Crea la richiesta
+        #     requestArm = taskPocRequest()
+            
+        #     requestArm.sensorID.data = name
+        #     # Invia la richiesta e riceve la risposta
+        #     responseArm = self.clientStartArmTask(requestArm)
+        #     print('fattooo11111111111')
+        #     #response1['sensorID']['data'] = "na"
+        #     # response['type']['data'] = "0"
+        #     # response['subType']['data'] = "0"
+        #     print('fattoooooooooooo')
+        # except rospy.ServiceException as e:
+        #     rospy.logerr("Service call failed: %s", e)
+
+        # print('nooooooooooooo')
+        
+        # # Crea la richiesta
+        requestArm = taskPocRequest()
+        
+        requestArm.task.data = name
+        # Invia la richiesta e riceve la risposta
+        self.clientStartArmTask(requestArm)
+        print('fattooo11111111111')
+
         return True
 
 
@@ -59,14 +86,15 @@ class CustomNode:
                 {
                     'mode': {'data': 1},
                     'sequenceExecutionType': {'data': 1},
-                    'TasksID': [{'data': 'allontanamento'}],
+                    'TasksID': [{'data': req.task.data}],
                     'taskInLoop': {'data': False}
                 }
             ]
         })
         self.playCmd.call(request)
-        #print(f'Richiesta ricevuta to start Mobile task: {request}')
-        return EmptyResponse() 
+
+        print(f'Richiesta ricevuta to start Mobile task: {request}')
+        return taskPocResponse() 
         
         
         
