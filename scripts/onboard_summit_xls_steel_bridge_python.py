@@ -8,7 +8,6 @@ from rpwc_msgs.srv import robotMobileBaseState, robotMobileBaseStateResponse, se
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 
-import roslibpy
 
 class CustomNode:
     def __init__(self):
@@ -18,16 +17,8 @@ class CustomNode:
         rospy.loginfo("namespace: %s", self.namespace)
         rospy.loginfo("setup_namespace: %s", setup_namespace)
         
-        rospy.wait_for_service(setup_namespace + '/set_hardware_activation')
-        set_hardware_activation_service = rospy.ServiceProxy(setup_namespace + '/set_hardware_activation', setHardwareActivation)
-        
-        #Servizio per lanciare in play il braccio
-        self.client = roslibpy.Ros(host='192.168.131.22', port=9090)
-        self.client.run()
-        self.start_arm_task = roslibpy.Service(self.client, setup_namespace + '/set_arm_start_task', 'std_msgs/Empty')
-
-        #Servizio che legge su rpwc onboard della base mobile e manda un rolibpy per play braccio
-        self.server_launch_arm_task_ = rospy.Service(setup_namespace +"/rpwc_arm_task", Empty, self.callback_launch_arm_task)
+        rospy.wait_for_service( '/setup1/set_hardware_activation')
+        set_hardware_activation_service = rospy.ServiceProxy('/setup1/set_hardware_activation', setHardwareActivation)
 
         # Prepara il messaggio di richiesta
         req = setHardwareActivationRequest()
@@ -57,16 +48,7 @@ class CustomNode:
         self.pub_poses_control = rospy.Publisher(self.namespace + 'poses_control', RobotMobileBaseControl, queue_size=1)
         self.sub_odom = rospy.Subscriber('/robot/robotnik_base_control/odom', Odometry, self.odom_callback)
 
-    def callback_launch_arm_task(self,req):
-        #invia empy msg
-        # Prepara il messaggio di richiesta
-        #ANORMALE CON ROSLIBPY
-        request = roslibpy.ServiceRequest({
-            
-        })
-         # # Chiama il servizio e attendi la risposta
-        response = self.start_arm_task.call(request)
-        return EmptyRequest(self.response)
+
 
 
 
