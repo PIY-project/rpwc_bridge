@@ -11,7 +11,6 @@ from geometry_msgs.msg import PoseStamped
 
 import roslibpy
 
-mobileBaseTask = "Task_0_0"
 
 class CustomNode:
     def __init__(self):
@@ -22,16 +21,10 @@ class CustomNode:
 
         self.sub_rpwc_joy = rospy.Subscriber(self.namespace + 'joy_web', Twist, self.callback_rpwc_joy)
         self.serverTeachFromWeb = rospy.Service('/bimuTeachFromWeb', stateRec, self.teachFromWeb)
+        
         self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb', stateExec, self.playFromWeb)
 
-        #BIMU ##################
-        self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb1', stateExec, self.playFromWeb1)
-        self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb2', stateExec, self.playFromWeb2)
-        self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb3', stateExec, self.playFromWeb3)
-        self.serverPlayFromWeb = rospy.Service('/bimuPlayFromWeb4', stateExec, self.playFromWeb4)
-        ############################################
-
-
+       
         self.clientStartArmTask = rospy.ServiceProxy('/setup1/set_arm_start_task', taskPoc)
         
         
@@ -60,8 +53,7 @@ class CustomNode:
         print(f'Richiesta ricevuta to start Arm task: {request}')
         name = request['task']['data']
         print(f'Name: {name}')
-        number = int(name)
-        print(f'Number: {number}')
+        
         # try:
         #     # # Crea la richiesta
         #     requestArm = taskPocRequest()
@@ -128,8 +120,8 @@ class CustomNode:
             'TasksExec':[
                 {
                     'mode': {'data': 1},
-                    'sequenceExecutionType': {'data': 1},
-                    'TasksID': [{'data': mobileBaseTask}],
+                    'sequenceExecutionType': {'data': req.state.data},
+                    'TasksID': [{'data': 'Task_0_0'}],
                     'taskInLoop': {'data': False}
                 }
             ]
@@ -140,82 +132,7 @@ class CustomNode:
         #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
         return stateExecResponse(self.response)
     
-    #BIMU ##################
-    def playFromWeb1(self, req):
-        
-        request = roslibpy.ServiceRequest({
-            'state' : { 'data': 0},
-            'TasksExec':[
-                {
-                    'mode': {'data': 1},
-                    'sequenceExecutionType': {'data': 1},
-                    'TasksID': [{'data': mobileBaseTask}],
-                    'taskInLoop': {'data': False}
-                }
-            ]
-        })
 
-        # # Chiama il servizio e attendi la risposta
-        response = self.playCmd.call(request)
-        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return stateExecResponse(self.response)
-    
-    def playFromWeb2(self, req):
-        
-        request = roslibpy.ServiceRequest({
-            'state' : { 'data': 0},
-            'TasksExec':[
-                {
-                    'mode': {'data': 1},
-                    'sequenceExecutionType': {'data': 2},
-                    'TasksID': [{'data': mobileBaseTask}],
-                    'taskInLoop': {'data': False}
-                }
-            ]
-        })
-
-        # # Chiama il servizio e attendi la risposta
-        response = self.playCmd.call(request)
-        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return stateExecResponse(self.response)
-    
-    def playFromWeb3(self, req):
-        
-        request = roslibpy.ServiceRequest({
-            'state' : { 'data': 0},
-            'TasksExec':[
-                {
-                    'mode': {'data': 1},
-                    'sequenceExecutionType': {'data': 3},
-                    'TasksID': [{'data': mobileBaseTask}],
-                    'taskInLoop': {'data': False}
-                }
-            ]
-        })
-
-        # # Chiama il servizio e attendi la risposta
-        response = self.playCmd.call(request)
-        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return stateExecResponse(self.response)
-    
-    def playFromWeb4(self, req):
-        
-        request = roslibpy.ServiceRequest({
-            'state' : { 'data': 0},
-            'TasksExec':[
-                {
-                    'mode': {'data': 1},
-                    'sequenceExecutionType': {'data': 4},
-                    'TasksID': [{'data': mobileBaseTask}],
-                    'taskInLoop': {'data': False}
-                }
-            ]
-        })
-
-        # # Chiama il servizio e attendi la risposta
-        response = self.playCmd.call(request)
-        #rospy.loginfo(f"Richiesta ricevuta:{req.state.data}")
-        return stateExecResponse(self.response)
     
     ################################
 
