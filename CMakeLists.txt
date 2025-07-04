@@ -20,6 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   image_transport
   rpwc_msgs
+  actionlib
+  actionlib_msgs
   #zivid_camera
 )
 
