@@ -13,7 +13,7 @@
 
 
 trajectory_msgs::JointTrajectory cmd_msg_;
-ros::Publisher pub_for_recording_, pub_gripper_des_, pub_CommandHand_test_;
+ros::Publisher pub_for_recording_, pub_gripper_des_;
 rpwc_msgs::RobotEeStateStamped lastCmdMsg_;
 typedef actionlib::SimpleActionServer<rpwc_msgs::robotEeCmdAction> robotEeCmdAS;
 double gripperFeedbackState_ = 0.0;
