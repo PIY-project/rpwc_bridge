@@ -59,12 +59,12 @@ bool callback_server_rpwc_gripper_cmd(rpwc_msgs::robotEeCmd::Request  &req, rpwc
 	double velocity = 0;
 	double force = 0;
 
-	position = (position *1.5) - 0.5;
+	double remapped_position = (position *1.5) - 0.5;
 	cmd_msg_.joint_names.resize(1);
   	cmd_msg_.joint_names[0] = "qbsoftclaw_deflection_virtual_joint";
 	cmd_msg_.points.clear();
   	cmd_msg_.points.resize(1);
-  	cmd_msg_.points[0].positions.push_back(position);
+  	cmd_msg_.points[0].positions.push_back(remapped_position);
   	cmd_msg_.points[0].time_from_start = ros::Duration(0.3);
 	pub_gripper_des_.publish(cmd_msg_);
 
@@ -86,14 +86,6 @@ void eeCmdMove::goal_callback()
 	rpwc_msgs::robotEeCmd::Request robotEeCmdSrv;
 	robotEeCmdSrv.state = ee_goal_->state;
 	rpwc_msgs::robotEeCmd::Response emptyResponse;
-
-	if(fabs(lastCmdMsg_.position.data - ee_goal_->state.position.data) <= 0.30) 
-	{
-		ee_result_.success = true;
-		ee_result_.msg = "Execution completed successfully.";
-		as_.setSucceeded(ee_result_);
-		return;
-	}
 	
 	if(!callback_server_rpwc_gripper_cmd(robotEeCmdSrv, emptyResponse))
 	{
@@ -105,7 +97,7 @@ void eeCmdMove::goal_callback()
 
 	ros::Duration(1.0).sleep(); //ensure the grip is closed
 
-	if (ee_goal_->state.position.data > 0.0 && gripperFeedbackState_ < -0.59)
+	if (ee_goal_->state.position.data >= 0.5 && gripperFeedbackState_ < 0)
     {
 		ee_result_.success = false;
 		ee_result_.msg = "Error: gripper did not close properly.";
@@ -135,12 +127,12 @@ void callback_rpwc_gripper_cmd(const rpwc_msgs::RobotEeStateStamped::ConstPtr& m
 	double velocity = 0;
 	double force = 0;
 
-	position = (position *1.5) - 0.5;
+	double remapped_position = (position *1.5) - 0.5;
 	cmd_msg_.joint_names.resize(1);
   	cmd_msg_.joint_names[0] = "qbsoftclaw_deflection_virtual_joint";
 	cmd_msg_.points.clear();
   	cmd_msg_.points.resize(1);
-  	cmd_msg_.points[0].positions.push_back(position);
+  	cmd_msg_.points[0].positions.push_back(remapped_position);
   	cmd_msg_.points[0].time_from_start = ros::Duration(0.3);
 
 	if((lastCmdMsg_.position.data != position) || (lastCmdMsg_.velocity.data != velocity) || (lastCmdMsg_.force.data != force) ) pub_gripper_des_.publish(cmd_msg_);
