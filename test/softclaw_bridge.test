@@ -1,0 +1,14 @@
+<launch>
+  <group ns="softclaw_bridge_test">
+    <node pkg="rpwc_bridge" type="softclaw_bridge_node" name="bridge" output="screen">
+      <param name="target_stability_sec" value="0.1"/>
+      <param name="early_stability_sec" value="0.2"/>
+      <param name="motion_timeout_sec" value="1.2"/>
+      <param name="startup_timeout_sec" value="5.0"/>
+      <param name="feedback_timeout_sec" value="0.3"/>
+      <param name="evaluation_period_sec" value="0.02"/>
+    </node>
+    <test pkg="rpwc_bridge" type="softclaw_bridge_integration.py"
+          test-name="softclaw_bridge_integration" time-limit="40"/>
+  </group>
+</launch>

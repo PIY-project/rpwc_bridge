@@ -1,367 +1,443 @@
 /**
- * @file main_softclaw_bridge.cpp
- * @brief RPWC bridge node for the qb SoftClaw end-effector.
- *
- * This node translates normalized RPWC end-effector commands into qb SoftClaw
- * deflection-joint trajectory commands. It also exposes the current gripper
- * state, periodically publishes the cached state for recording, and reports
- * hardware initialization status to the RPWC hardware manager.
+ * RPWC bridge for the qb SoftClaw. A stabilized early close is not proof that
+ * an object has been grasped. The qb trajectory controller does not apply the
+ * RPWC force and velocity command fields.
  */
 
-#include <ros/ros.h>
-#include <rpwc_msgs/robotEeCmdAction.h>
-#include <rpwc_msgs/RobotEeStateStamped.h>
-#include <rpwc_msgs/robotEeState.h>
-#include <rpwc_msgs/robotEeCmd.h>
-#include <rpwc_msgs/checkHardwareStatus.h>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <sensor_msgs/JointState.h>
 #include <actionlib/server/simple_action_server.h>
+#include <boost/bind.hpp>
+#include <ros/ros.h>
+#include <rpwc_bridge/softclaw_motion.h>
+#include <rpwc_msgs/RobotEeStateStamped.h>
+#include <rpwc_msgs/checkHardwareStatus.h>
+#include <rpwc_msgs/robotEeCmd.h>
+#include <rpwc_msgs/robotEeCmdAction.h>
+#include <rpwc_msgs/robotEeState.h>
+#include <sensor_msgs/JointState.h>
+#include <trajectory_msgs/JointTrajectory.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
-
-/** @brief Publishers for RPWC recording and SoftClaw trajectory commands. */
-ros::Publisher pub_for_recording_, pub_gripper_des_;
-
-/** @brief Last normalized RPWC command/state cached by the bridge. */
-rpwc_msgs::RobotEeStateStamped lastCmdMsg_;
-
-typedef actionlib::SimpleActionServer<rpwc_msgs::robotEeCmdAction> robotEeCmdAS;
-
-/** @brief Latest raw SoftClaw deflection-joint feedback. */
-double gripperFeedbackState_ = 0.0;
-
-/** @brief True after the first valid feedback message from the qb driver. */
-bool initialized_ = false;
-
-/** @brief Hardware check status exposed through check_hardware_status. */
-int	hw_check_status_ = 0;  ///< 0 = CHECKING, 1 = END_CHECK.
-bool hw_check_result_ = false;  ///< True when the hardware check completed successfully.
-std::string hw_check_info_ = "";  ///< Human-readable hardware check details.
+#include <string>
 
 namespace
 {
-const std::string kSoftClawDeflectionJointName = "qbsoftclaw_deflection_virtual_joint";  ///< SoftClaw virtual deflection joint name.
-constexpr double kRpwcPositionMin = 0.0;  ///< Minimum normalized RPWC position.
-constexpr double kRpwcPositionMax = 1.0;  ///< Maximum normalized RPWC position.
-constexpr double kDeflectionPositionMin = -0.5;  ///< Minimum SoftClaw deflection command.
-constexpr double kDeflectionPositionMax = 1.0;  ///< Maximum SoftClaw deflection command.
-constexpr double kTrajectoryDurationSec = 0.3;  ///< Duration assigned to each trajectory command.
-constexpr double kActionCompletionWaitSec = 1.0;  ///< Fixed wait used by the action callback.
-constexpr double kInitialClosedThreshold = 0.82;  ///< Initial feedback threshold treated as fully closed.
-constexpr double kDefaultVelocity = 0.0;  ///< Velocity placeholder for the RPWC interface.
-constexpr double kDefaultForce = 0.0;  ///< Force placeholder for the RPWC interface.
+constexpr double kDeflectionMin = -0.5;
+constexpr double kDeflectionMax = 1.0;
+constexpr double kTrajectoryDurationSec = 0.3;
+constexpr double kDuplicateRepublishSec = 1.0;
+const char kDeflectionJoint[] = "qbsoftclaw_deflection_virtual_joint";
 
-/**
- * @brief Clamp a scalar value to an inclusive range.
- * @param value Input value.
- * @param min_value Lower bound.
- * @param max_value Upper bound.
- * @return The clamped value.
- */
-double clamp_value(double value, double min_value, double max_value)
+using Clock = rpwc_bridge::SoftClawMotion::Clock;
+using TimePoint = Clock::time_point;
+using ActionServer = actionlib::SimpleActionServer<rpwc_msgs::robotEeCmdAction>;
+
+double clampPosition(double position)
 {
-	return std::max(min_value, std::min(value, max_value));
+  return std::max(0.0, std::min(1.0, position));
 }
 
-/**
- * @brief Clamp a normalized RPWC position to the supported range.
- * @param position Requested normalized RPWC position.
- * @return Position clamped to [0, 1].
- */
-double clamp_rpwc_position(double position)
+double toDeflection(double position)
 {
-	return clamp_value(position, kRpwcPositionMin, kRpwcPositionMax);
+  return kDeflectionMin + clampPosition(position) * (kDeflectionMax - kDeflectionMin);
 }
 
-/**
- * @brief Convert a normalized RPWC position into a SoftClaw deflection value.
- * @param position Normalized RPWC position in [0, 1].
- * @return Deflection-joint command in the SoftClaw controller range.
- */
-double rpwc_position_to_deflection(double position)
+double toNormalized(double deflection)
 {
-	return (clamp_rpwc_position(position) * (kDeflectionPositionMax - kDeflectionPositionMin)) + kDeflectionPositionMin;
+  return clampPosition((deflection - kDeflectionMin) / (kDeflectionMax - kDeflectionMin));
 }
 
-/**
- * @brief Convert SoftClaw deflection feedback into normalized RPWC position space.
- * @param deflection_position Raw deflection-joint feedback.
- * @return Normalized RPWC position clamped to [0, 1].
- */
-double deflection_to_rpwc_position(double deflection_position)
+double elapsedSeconds(TimePoint now, TimePoint then)
 {
-	return clamp_rpwc_position((deflection_position - kDeflectionPositionMin) / (kDeflectionPositionMax - kDeflectionPositionMin));
+  return std::chrono::duration<double>(now - then).count();
 }
 
-/**
- * @brief Publish a SoftClaw trajectory command and update the cached RPWC state.
- * @param requested_position Requested normalized RPWC position.
- * @param force_publish If true, publish even when the command matches the cached state.
- * @return True when the command message has been prepared successfully.
- */
-bool publish_softclaw_command(double requested_position, bool force_publish)
+struct BridgeConfig
 {
-	const double position = clamp_rpwc_position(requested_position);
-	const double velocity = kDefaultVelocity;
-	const double force = kDefaultForce;
+  rpwc_bridge::SoftClawMotionConfig motion;
+  double feedback_timeout_sec = 0.5;
+  double startup_timeout_sec = 10.0;
+  double evaluation_period_sec = 0.05;
+};
 
-	trajectory_msgs::JointTrajectory cmd_msg;
-	cmd_msg.joint_names.resize(1);
-	cmd_msg.joint_names[0] = kSoftClawDeflectionJointName;
-	cmd_msg.points.resize(1);
-	cmd_msg.points[0].positions.push_back(rpwc_position_to_deflection(position));
-	cmd_msg.points[0].time_from_start = ros::Duration(kTrajectoryDurationSec);
-
-	if(force_publish || (lastCmdMsg_.position.data != position) || (lastCmdMsg_.velocity.data != velocity) || (lastCmdMsg_.force.data != force))
-	{
-		pub_gripper_des_.publish(cmd_msg);
-	}
-
-	lastCmdMsg_.position.data = position;
-	lastCmdMsg_.velocity.data = velocity;
-	lastCmdMsg_.force.data = force;
-	lastCmdMsg_.header.stamp = ros::Time::now();
-
-	return true;
+double positiveParam(const ros::NodeHandle& nh, const std::string& name, double default_value)
+{
+  double value = default_value;
+  nh.param(name, value, default_value);
+  if (!std::isfinite(value) || value <= 0.0)
+  {
+    ROS_WARN_STREAM("Invalid ~" << name << "=" << value << "; using " << default_value);
+    return default_value;
+  }
+  return value;
 }
 
-/**
- * @brief Read a joint position from a JointState message by joint name.
- * @param msg JointState feedback message.
- * @param joint_name Joint name to look up.
- * @param position Output joint position when found.
- * @return True when both the joint name and its position value are available.
- */
-bool get_joint_position(const sensor_msgs::JointState::ConstPtr& msg, const std::string& joint_name, double& position)
+BridgeConfig loadConfig(const ros::NodeHandle& nh)
 {
-	const auto joint_it = std::find(msg->name.begin(), msg->name.end(), joint_name);
-	if(joint_it == msg->name.end())
-	{
-		return false;
-	}
+  BridgeConfig config;
+  config.motion.position_tolerance = positiveParam(nh, "position_tolerance", 0.02);
+  config.motion.target_stability_sec = positiveParam(nh, "target_stability_sec", 0.2);
+  config.motion.early_stability_sec = positiveParam(nh, "early_stability_sec", 0.5);
+  config.motion.stability_delta = positiveParam(nh, "stability_delta", 0.01);
+  config.motion.min_close_progress = positiveParam(nh, "min_close_progress", 0.02);
+  config.motion.motion_timeout_sec = positiveParam(nh, "motion_timeout_sec", 8.0);
+  config.feedback_timeout_sec = positiveParam(nh, "feedback_timeout_sec", 0.5);
+  config.startup_timeout_sec = positiveParam(nh, "startup_timeout_sec", 10.0);
+  config.evaluation_period_sec = positiveParam(nh, "evaluation_period_sec", 0.05);
+  return config;
+}
 
-	const std::size_t joint_index = static_cast<std::size_t>(joint_it - msg->name.begin());
-	if(joint_index >= msg->position.size())
-	{
-		return false;
-	}
-
-	position = msg->position[joint_index];
-	return true;
+bool jointPosition(const sensor_msgs::JointState::ConstPtr& msg, double& position)
+{
+  const auto it = std::find(msg->name.begin(), msg->name.end(), kDeflectionJoint);
+  if (it == msg->name.end())
+    return false;
+  const std::size_t index = static_cast<std::size_t>(it - msg->name.begin());
+  if (index >= msg->position.size() || !std::isfinite(msg->position[index]))
+    return false;
+  position = msg->position[index];
+  return true;
 }
 }  // namespace
 
-/**
- * @brief Action server wrapper for RPWC SoftClaw end-effector commands.
- */
-class eeCmdMove
+class SoftClawBridge
 {
-	protected:
-		robotEeCmdAS as_;  ///< Action server handling rpwc_EE_action_cmd goals.
-		rpwc_msgs::robotEeCmdGoalConstPtr ee_goal_;  ///< Currently accepted action goal.
-		rpwc_msgs::robotEeCmdResult ee_result_;  ///< Result message reused by action callbacks.
-
 public:
-	/**
-	 * @brief Construct and start the SoftClaw action server.
-	 * @param nh_ ROS node handle used to advertise the action server.
-	 */
-	eeCmdMove(ros::NodeHandle& nh_);
+  SoftClawBridge()
+    : private_nh_("~"),
+      config_(loadConfig(private_nh_)),
+      motion_(config_.motion),
+      action_(nh_, "rpwc_EE_action_cmd", false),
+      started_at_(Clock::now())
+  {
+    command_pub_ = nh_.advertise<trajectory_msgs::JointTrajectory>(
+        "qbsoftclaw/control/qbsoftclaw_deflection_trajectory_controller/command", 10);
+    recording_pub_ = nh_.advertise<rpwc_msgs::RobotEeStateStamped>("rpwc_recording_EE", 1);
+    command_sub_ = nh_.subscribe("rpwc_EE_cmd", 1, &SoftClawBridge::onTopicCommand, this);
+    feedback_sub_ = nh_.subscribe("qbsoftclaw/control/joint_states", 1,
+                                  &SoftClawBridge::onFeedback, this);
+    command_service_ = nh_.advertiseService("rpwc_EE_cmd", &SoftClawBridge::onServiceCommand, this);
+    pose_service_ = nh_.advertiseService("rpwc_robot_curr_pose", &SoftClawBridge::onPose, this);
+    state_service_ = nh_.advertiseService("rpwc_robot_curr_state", &SoftClawBridge::onState, this);
+    hardware_service_ = nh_.advertiseService("check_hardware_status", &SoftClawBridge::onHardware, this);
+    evaluation_timer_ = nh_.createWallTimer(ros::WallDuration(config_.evaluation_period_sec),
+                                            &SoftClawBridge::onEvaluation, this);
+    recording_timer_ = nh_.createWallTimer(ros::WallDuration(0.1),
+                                           &SoftClawBridge::onRecording, this);
+    action_.registerGoalCallback(boost::bind(&SoftClawBridge::onGoal, this));
+    action_.registerPreemptCallback(boost::bind(&SoftClawBridge::onPreempt, this));
+    action_.start();
+    ROS_INFO("SoftClaw bridge started; early close means stable motion, not verified grasp");
+  }
 
-  	/** @brief Destroy the action server wrapper. */
-  	~eeCmdMove();
+private:
+  bool feedbackFresh(TimePoint now) const
+  {
+    return has_feedback_ && elapsedSeconds(now, feedback_at_) <= config_.feedback_timeout_sec;
+  }
 
-  /** @brief Accept and execute a new RPWC end-effector action goal. */
-  void goal_callback();
+  void cacheCommand(double position)
+  {
+    has_command_ = true;
+    last_command_.position.data = position;
+    last_command_.velocity.data = 0.0;
+    last_command_.force.data = 0.0;
+    last_command_.header.stamp = ros::Time::now();
+  }
 
-  /** @brief Handle action preemption requests. */
-  void preempt_callback();
-};
+  void publishTrajectory(double deflection)
+  {
+    trajectory_msgs::JointTrajectory message;
+    message.joint_names.push_back(kDeflectionJoint);
+    message.points.resize(1);
+    message.points[0].positions.push_back(deflection);
+    message.points[0].time_from_start = ros::Duration(kTrajectoryDurationSec);
+    command_pub_.publish(message);
+  }
 
-eeCmdMove::eeCmdMove(ros::NodeHandle& nh_) : as_(nh_, "rpwc_EE_action_cmd", false)
-{
-	as_.registerGoalCallback(boost::bind(&eeCmdMove::goal_callback, this));
-	as_.registerPreemptCallback(boost::bind(&eeCmdMove::preempt_callback, this));
-	as_.start();
-  	ROS_INFO_STREAM("eeCmdMove action server started.");
-}
+  bool holdMeasuredPosition(TimePoint now)
+  {
+    if (!feedbackFresh(now))
+      return false;
+    publishTrajectory(std::max(kDeflectionMin, std::min(kDeflectionMax, feedback_deflection_)));
+    has_published_ = true;
+    last_published_at_ = now;
+    cacheCommand(feedback_position_);
+    return true;
+  }
 
-eeCmdMove::~eeCmdMove()
-{
-    ROS_INFO_STREAM("eeCmdMove removed.");
-}
+  void preemptActive(const std::string& reason)
+  {
+    if (!motion_.active())
+      return;
+    const bool held = holdMeasuredPosition(Clock::now());
+    motion_.reset();
+    rpwc_msgs::robotEeCmdResult result;
+    result.success = false;
+    result.msg = reason + (held ? "; holding measured position"
+                                : "; feedback stale, hold not guaranteed");
+    ROS_WARN_STREAM("SoftClaw action preempted: " << result.msg);
+    if (action_.isActive())
+      action_.setPreempted(result);
+  }
 
-/**
- * @brief Service callback for RPWC SoftClaw position commands.
- * @param req Service request containing the desired normalized RPWC state.
- * @param res Service response, currently unused.
- * @return True when the command has been accepted for publication.
- */
-bool callback_server_rpwc_gripper_cmd(rpwc_msgs::robotEeCmd::Request  &req, rpwc_msgs::robotEeCmd::Response &res)
-{
-	return publish_softclaw_command(req.state.position.data, true);
-}
-
-void eeCmdMove::goal_callback()
-{
-    ee_goal_ = as_.acceptNewGoal();
-	ROS_INFO_STREAM("Received goal with force: " << ee_goal_->state.force.data
-                    << ", position: " << ee_goal_->state.position.data
-                    << ", velocity: " << ee_goal_->state.velocity.data);
-	
-	if(!publish_softclaw_command(ee_goal_->state.position.data, true))
-	{
-		ee_result_.success = false;
-		ee_result_.msg = "Error during command execution.";
-		as_.setAborted(ee_result_);
-		return;
-	}
-
-	// Fixed wait: the SoftClaw does not expose a reliable "busy/done" state here like OnRobot.
-	ros::Duration(kActionCompletionWaitSec).sleep(); // Ensure the grip is closed.
-
-	// Minimal closing check: if a grasp is requested and feedback stays negative,
-	// the action is considered failed.
-	if (ee_goal_->state.position.data >= 0.5 && gripperFeedbackState_ < 0)
+  bool acceptCommand(double requested_position, bool action_command, bool force_publish,
+                     std::string& info)
+  {
+    const auto now = Clock::now();
+    if (!std::isfinite(requested_position))
     {
-		ee_result_.success = false;
-		ee_result_.msg = "Error: gripper did not close properly.";
-		as_.setAborted(ee_result_);
-		return;
+      info = "Position must be finite";
+      return false;
+    }
+    if (!feedbackFresh(now))
+    {
+      info = "No recent valid SoftClaw feedback";
+      return false;
     }
 
-	ee_result_.success = true;
-	ee_result_.msg = "Execution completed successfully.";
-	as_.setSucceeded(ee_result_);
+    const double target = clampPosition(requested_position);
+    if (!action_command && !force_publish && motion_.active() &&
+        motion_.target() == target)
+    {
+      info = "Topic command already active";
+      return true;
+    }
+    if (!action_command && !force_publish && !motion_.active() && has_published_ &&
+        last_command_.position.data == target &&
+        elapsedSeconds(now, last_published_at_) < kDuplicateRepublishSec)
+    {
+      info = "Duplicate topic command ignored";
+      return true;
+    }
 
-	return;
-}
+    if (motion_.active())
+      preemptActive("Replaced by another command");
 
-void eeCmdMove::preempt_callback()
+    publishTrajectory(toDeflection(target));
+    has_published_ = true;
+    last_published_at_ = Clock::now();
+    cacheCommand(target);
+    if (action_command)
+      motion_.start(feedback_position_, target, Clock::now());
+    info = "Command accepted and published; motion completion is not confirmed";
+    return true;
+  }
+
+  void onGoal()
+  {
+    if (motion_.active())
+      preemptActive("Replaced by a new action goal");
+    const auto goal = action_.acceptNewGoal();
+    if (!goal)
+      return;
+    // actionlib may have received a cancel for this goal before acceptNewGoal().
+    if (action_.isPreemptRequested())
+    {
+      rpwc_msgs::robotEeCmdResult result;
+      result.success = false;
+      result.msg = "Action goal canceled before command publication";
+      action_.setPreempted(result);
+      return;
+    }
+
+    std::string info;
+    if (!acceptCommand(goal->state.position.data, true, true, info))
+    {
+      rpwc_msgs::robotEeCmdResult result;
+      result.success = false;
+      result.msg = info;
+      action_.setAborted(result);
+    }
+    else if (action_.isPreemptRequested())
+    {
+      preemptActive("Action goal canceled");
+    }
+  }
+
+  void onPreempt()
+  {
+    if (motion_.active() && action_.isActive() && action_.isPreemptRequested())
+      preemptActive("Action goal canceled");
+  }
+
+  void finishAction(bool success, const std::string& message)
+  {
+    motion_.reset();
+    rpwc_msgs::robotEeCmdResult result;
+    result.success = success;
+    result.msg = message;
+    if (success)
+      ROS_INFO_STREAM("SoftClaw action completed: " << message);
+    else
+      ROS_WARN_STREAM("SoftClaw action failed: " << message);
+    if (!action_.isActive())
+      return;
+    if (success)
+      action_.setSucceeded(result);
+    else
+      action_.setAborted(result);
+  }
+
+  void onEvaluation(const ros::WallTimerEvent&)
+  {
+    if (!motion_.active())
+      return;
+    const auto now = Clock::now();
+    if (!feedbackFresh(now))
+    {
+      finishAction(false, "Feedback lost or stale; hold not guaranteed");
+      return;
+    }
+
+    switch (motion_.evaluate(now))
+    {
+      case rpwc_bridge::SoftClawMotion::Result::TARGET_REACHED:
+        finishAction(true, "Target position reached and stable");
+        break;
+      case rpwc_bridge::SoftClawMotion::Result::EARLY_CLOSE:
+        finishAction(true, "Closing stabilized before target; object grasp is not verified");
+        break;
+      case rpwc_bridge::SoftClawMotion::Result::NO_PROGRESS:
+        holdMeasuredPosition(now);
+        finishAction(false, "Closing timed out without sufficient progress");
+        break;
+      case rpwc_bridge::SoftClawMotion::Result::TIMEOUT:
+        holdMeasuredPosition(now);
+        finishAction(false, "Motion timed out before completing");
+        break;
+      case rpwc_bridge::SoftClawMotion::Result::PENDING:
+        break;
+    }
+  }
+
+  void onFeedback(const sensor_msgs::JointState::ConstPtr& message)
+  {
+    double deflection = 0.0;
+    if (!jointPosition(message, deflection))
+    {
+      ROS_WARN_STREAM_THROTTLE(5.0, "Invalid SoftClaw joint_states: missing or non-finite "
+                                      << kDeflectionJoint);
+      return;
+    }
+
+    const auto now = Clock::now();
+    feedback_deflection_ = deflection;
+    feedback_position_ = toNormalized(deflection);
+    feedback_at_ = now;
+    feedback_ros_at_ = ros::Time::now();
+    has_feedback_ = true;
+    if (!has_command_)
+      cacheCommand(feedback_position_);
+    motion_.observe(feedback_position_, now);
+  }
+
+  void onTopicCommand(const rpwc_msgs::RobotEeStateStamped::ConstPtr& message)
+  {
+    std::string info;
+    if (!acceptCommand(message->position.data, false, false, info))
+      ROS_WARN_STREAM_THROTTLE(5.0, "SoftClaw topic command rejected: " << info);
+  }
+
+  bool onServiceCommand(rpwc_msgs::robotEeCmd::Request& request,
+                        rpwc_msgs::robotEeCmd::Response& response)
+  {
+    std::string info;
+    response.success.data = acceptCommand(request.state.position.data, false, true, info);
+    response.info.data = info;
+    return true;
+  }
+
+  bool onPose(rpwc_msgs::robotEeState::Request&, rpwc_msgs::robotEeState::Response& response)
+  {
+    if (!has_command_)
+      return false;
+    response.state = last_command_;
+    return true;
+  }
+
+  bool onState(rpwc_msgs::robotEeState::Request&, rpwc_msgs::robotEeState::Response& response)
+  {
+    if (!feedbackFresh(Clock::now()))
+      return false;
+    response.state.position.data = feedback_position_;
+    response.state.velocity.data = 0.0;
+    response.state.force.data = 0.0;
+    response.state.header.stamp = feedback_ros_at_;
+    return true;
+  }
+
+  bool onHardware(rpwc_msgs::checkHardwareStatus::Request&,
+                  rpwc_msgs::checkHardwareStatus::Response& response)
+  {
+    const auto now = Clock::now();
+    if (feedbackFresh(now))
+    {
+      response.status.data = 1;  // END_CHECK
+      response.result.data = true;
+      response.info.data.clear();
+    }
+    else if (!has_feedback_ && elapsedSeconds(now, started_at_) < config_.startup_timeout_sec)
+    {
+      response.status.data = 0;  // CHECKING
+      response.result.data = false;
+      response.info.data = "Waiting for valid SoftClaw feedback";
+    }
+    else
+    {
+      response.status.data = 1;  // END_CHECK
+      response.result.data = false;
+      response.info.data = has_feedback_ ? "SoftClaw feedback is stale"
+                                         : "Timed out waiting for valid SoftClaw feedback";
+    }
+    return true;
+  }
+
+  void onRecording(const ros::WallTimerEvent&)
+  {
+    if (!has_command_)
+      return;
+    auto recording = last_command_;
+    recording.header.stamp = ros::Time::now();
+    recording_pub_.publish(recording);
+  }
+
+  ros::NodeHandle nh_;
+  ros::NodeHandle private_nh_;
+  BridgeConfig config_;
+  rpwc_bridge::SoftClawMotion motion_;
+  ActionServer action_;
+  ros::Publisher command_pub_;
+  ros::Publisher recording_pub_;
+  ros::Subscriber command_sub_;
+  ros::Subscriber feedback_sub_;
+  ros::ServiceServer command_service_;
+  ros::ServiceServer pose_service_;
+  ros::ServiceServer state_service_;
+  ros::ServiceServer hardware_service_;
+  ros::WallTimer evaluation_timer_;
+  ros::WallTimer recording_timer_;
+  const TimePoint started_at_;
+  TimePoint feedback_at_;
+  ros::Time feedback_ros_at_;
+  bool has_feedback_ = false;
+  bool has_command_ = false;
+  bool has_published_ = false;
+  TimePoint last_published_at_;
+  double feedback_deflection_ = 0.0;
+  double feedback_position_ = 0.0;
+  rpwc_msgs::RobotEeStateStamped last_command_;
+};
+
+int main(int argc, char** argv)
 {
-    ROS_WARN("Goal preempted");
-    as_.setPreempted();
-}
-
-/**
- * @brief Topic callback for RPWC SoftClaw position commands.
- * @param msg Desired normalized RPWC state.
- */
-void callback_rpwc_gripper_cmd(const rpwc_msgs::RobotEeStateStamped::ConstPtr& msg)
-{
-	publish_softclaw_command(msg->position.data, false);
-}
-
-/**
- * @brief Return the last RPWC command sent to the SoftClaw.
- * @param req Service request, unused.
- * @param res Service response filled with the cached command state.
- * @return Always true.
- */
-bool callback_robot_curr_pose(rpwc_msgs::robotEeState::Request  &req, rpwc_msgs::robotEeState::Response &res)
-{
-	lastCmdMsg_.header.stamp = ros::Time::now();
-	res.state = lastCmdMsg_;
-	return true;
-}
-
-/**
- * @brief Report SoftClaw hardware initialization status to the RPWC hardware manager.
- * @param req Service request, unused.
- * @param res Service response populated with hardware check status, result, and info.
- * @return Always true.
- */
-bool callback_check_hardware_status(rpwc_msgs::checkHardwareStatus::Request& req, rpwc_msgs::checkHardwareStatus::Response& res)
-{
-	res.info.data   = hw_check_info_;
-	res.result.data = hw_check_result_;
-	res.status.data = hw_check_status_;
-	return true;
-}
-
-/**
- * @brief Update SoftClaw feedback and complete the startup hardware check.
- * @param msg JointState message published by the qb SoftClaw controller.
- */
-void callback_gripper_feedback(const sensor_msgs::JointState::ConstPtr& msg)
-{
-	double deflection_position = 0.0;
-	if(!get_joint_position(msg, kSoftClawDeflectionJointName, deflection_position))
-	{
-		hw_check_status_ = 1;  // END_CHECK
-		hw_check_result_ = false;
-		hw_check_info_   = "Invalid qbsoftclaw joint_states feedback: missing position for " + kSoftClawDeflectionJointName + ".";
-		ROS_WARN_STREAM_THROTTLE(5.0, hw_check_info_);
-		return;
-	}
-
-	gripperFeedbackState_ = deflection_position;
-	if(!initialized_)
-	{
-		initialized_ = true;
-		lastCmdMsg_.position.data = deflection_to_rpwc_position(gripperFeedbackState_);
-		if(lastCmdMsg_.position.data > kInitialClosedThreshold) lastCmdMsg_.position.data = 1.0;
-		lastCmdMsg_.velocity.data = 0;
-		lastCmdMsg_.force.data = 0;
-		hw_check_status_ = 1;  // END_CHECK
-		hw_check_result_ = true;
-		hw_check_info_   = "";
-	}
-}
-
-/**
- * @brief Return the current SoftClaw state in normalized RPWC position space.
- * @param req Service request, unused.
- * @param res Service response filled with current position and cached velocity/force.
- * @return Always true.
- */
-bool callback_robot_curr_state(rpwc_msgs::robotEeState::Request  &req, rpwc_msgs::robotEeState::Response &res)
-{
-	res.state.position.data = initialized_ ? deflection_to_rpwc_position(gripperFeedbackState_) : lastCmdMsg_.position.data;
-	res.state.velocity.data = lastCmdMsg_.velocity.data;
-	res.state.force.data = lastCmdMsg_.force.data;
-	return true;
-}
-
-/**
- * @brief Publish the cached RPWC state for recording.
- * @param event Timer event metadata, unused.
- */
-void pub_for_recording_callback(const ros::TimerEvent& event)
-{
-	pub_for_recording_.publish(lastCmdMsg_);
-}
-
-/**
- * @brief Initialize the ROS node, interfaces, action server, and recording timer.
- * @param argc Argument count passed by ROS.
- * @param argv Argument values passed by ROS.
- * @return Process exit code.
- */
-int main(int argc, char **argv)
-{
-	ros::init(argc, argv, "softclaw_bridge_node");
-	ros::NodeHandle nh;
-	ros::AsyncSpinner spinner(4);
-    spinner.start();
-
-	// Subscribers
-	ros::Subscriber sub_rpwc_gripper_cmd = nh.subscribe("rpwc_EE_cmd", 1, &callback_rpwc_gripper_cmd);
-	ros::Subscriber sub_gripper_feedback = nh.subscribe("qbsoftclaw/control/joint_states", 1, &callback_gripper_feedback);
-  	// Publishers
-    pub_gripper_des_ = nh.advertise<trajectory_msgs::JointTrajectory>("qbsoftclaw/control/qbsoftclaw_deflection_trajectory_controller/command", 1);
-    pub_for_recording_ = nh.advertise<rpwc_msgs::RobotEeStateStamped>("rpwc_recording_EE", 1);
-	// Service servers
-	ros::ServiceServer server_check_hw_status = nh.advertiseService("check_hardware_status", &callback_check_hardware_status);
-	ros::ServiceServer server_rpwc_gripper_cmd = nh.advertiseService("rpwc_EE_cmd", &callback_server_rpwc_gripper_cmd);
-  	ros::ServiceServer server_robot_curr_pose = nh.advertiseService("rpwc_robot_curr_pose", &callback_robot_curr_pose);
-	ros::ServiceServer server_robot_curr_state = nh.advertiseService("rpwc_robot_curr_state", &callback_robot_curr_state);
-	
-	eeCmdMove ee_cmd_move(nh);
-
-	ros::Timer pub_for_recording_timer = nh.createTimer(ros::Duration(0.1), &pub_for_recording_callback);
-
-    ros::waitForShutdown();
-	return 0;
+  ros::init(argc, argv, "softclaw_bridge_node");
+  SoftClawBridge bridge;
+  // All callbacks share one queue and one worker; no callback blocks waiting for motion.
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+  ros::waitForShutdown();
+  return 0;
 }

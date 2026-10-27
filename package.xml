@@ -49,6 +49,10 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>actionlib</depend>
+  <depend>rpwc_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>trajectory_msgs</depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>rpwc</build_depend>
@@ -84,6 +88,7 @@
   
   <!-- <exec_depend>apriltag_ros</exec_depend> -->
   <exec_depend>message_runtime</exec_depend>
+  <test_depend>rostest</test_depend>
   
 
 

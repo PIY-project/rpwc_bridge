@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   #rpwc
   std_msgs
+  sensor_msgs
+  trajectory_msgs
   #franka_gripper
   cv_bridge
   roslib
@@ -140,6 +142,7 @@ LIBRARIES ${Poco_LIBRARIES}
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  include
   include/rpwc_bridge
   ${Poco_INCLUDE_DIRS}
 )
@@ -255,6 +258,14 @@ target_link_libraries(softhand_bridge_node ${catkin_LIBRARIES})
 add_executable(softclaw_bridge_node src/main_softclaw_bridge.cpp)
 add_dependencies(softclaw_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(softclaw_bridge_node ${catkin_LIBRARIES})
+
+if(CATKIN_ENABLE_TESTING)
+  add_executable(softclaw_motion_test test/softclaw_motion_test.cpp)
+  add_dependencies(softclaw_motion_test ${catkin_EXPORTED_TARGETS})
+  add_test(NAME softclaw_motion_test COMMAND softclaw_motion_test)
+  find_package(rostest REQUIRED)
+  add_rostest(test/softclaw_bridge.test)
+endif()
 
 add_executable(softhand_2_bridge_node src/main_softhand_2_bridge.cpp)
 add_dependencies(softhand_2_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
